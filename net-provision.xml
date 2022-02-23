@@ -1,0 +1,7 @@
+<network>
+  <name>provision</name>
+  <bridge name='provision' stp='on' delay='0'/>
+  <ip address='192.168.14.1' netmask='255.255.255.0'>
+  </ip>
+</network>
+
