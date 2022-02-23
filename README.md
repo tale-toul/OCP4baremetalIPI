@@ -3,18 +3,19 @@
 ## Table of contents
 
 * [Reference documentation](#reference-documentation)
-* [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
-* [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
-* [Create the provisioning VM](#create-the-provisioning-vm) 
-* [Create the 3 empty master nodes](#create-the-3-empty-master-nodes)
-* [Create two empty worker nodes](#create-two-empty-worker-nodes)
-* [Install and set up vBMC in the physical node](#install-and-set-up-vbmc-in-the-physical-node) 
-Add firewall rules to allow the VMs to access the vbmcd service        9
-Set up virtualization in the provisioning VM        9
-Verify DNS resolution in the provisioning VM        10
-Preparing the provisioning node for OpenShift Container Platform installation        10
-Configure networking in the provisioning VM        11
-Get the pull secret, Openshift installer and oc client        13
+  * [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
+  * [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
+  * [Create the provisioning VM](#create-the-provisioning-vm) 
+  * [Create the 3 empty master nodes](#create-the-3-empty-master-nodes)
+  * [Create two empty worker nodes](#create-two-empty-worker-nodes)
+  * [Install and set up vBMC in the physical node](#install-and-set-up-vbmc-in-the-physical-node) 
+  * [Add firewall rules to allow the VMs to access the vbmcd service](#add-firewall-rules-to-allow-the-vms-to-access-the-vbmcd-service)
+  * [Set up virtualization in the provisioning VM](#set-up-virtualization-in-the-provisioning-vm)
+  * [Verify DNS resolution in the provisioning VM](#verify-dns-resolution-in-the-provisioning-vm) 
+  * [Preparing the provisioning node for OpenShift Container Platform installation](#preparing-the-provisioning-node-for-openshift-container-platform-installation)
+  * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm)
+  * [Get the pull secret, Openshift installer and oc client](#get-the-pull-secret,-openshift-installer-and-oc-client)
+
 Create the install-config.yaml file        13
 Install the Openshift cluster        15
 Troubleshooting the installation        16
@@ -79,7 +80,7 @@ options kvm_intel nested=1
 
 Later the provisioning VM must also be configured to support nested virtualization.
 
-## Create the routable baremetal and provisioning networks in KVM
+### Create the routable baremetal and provisioning networks in KVM
 
 The definition for the routable baremetal network can be found in the file _net-chucky.xml_.  It is a simple definition of a routable network with no DHCP using the network address space 192.168.30.0/24
 The definition for the provisioning network can be found in the file net-provision.xml.  The file contains the definition of a non routable network with no DHCP using the network address space 192.168.14.0/24
@@ -112,7 +113,7 @@ Check the network configuration in the host, new bridges should appear
 # nmcli con show
 ```
 
-## Create the provisioning VM
+### Create the provisioning VM
 
 Get the qcow2 image for RHEL 8 from access.redhat.com -> Downloads -> Red Hat Enterprise Linux 8 -> Red Hat Enterprise Linux 8.5 KVM Guest Image
 
@@ -176,7 +177,7 @@ $ ssh root@192.168.30.10
 [root@localhost ~]# df -Ph
 ```
 
-## Create the 3 empty master nodes
+### Create the 3 empty master nodes
 
 These don’t include an OS
 
@@ -212,7 +213,7 @@ The MAC addresses for the routable and provisioning network NICs are specified s
    --noautoconsole; done
 ```
 
-## Create two empty worker nodes
+### Create two empty worker nodes
 
 These don’t include an OS
 
@@ -232,7 +233,6 @@ Change the owner and group to qemu:
    /var/lib/libvirt/images/BMIPI-${x}.qcow2; done
 ```
 
-
 Create the 2 worker nodes using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
 The MAC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
@@ -251,39 +251,34 @@ Check that all VMs are created:
 # virsh list –all
 ```
 
-## Install and set up vBMC in the physical node
+### Install and set up vBMC in the physical node
 
 
 Install the following packages in the physical server
 
-
+```
 # dnf install gcc libvirt-devel python3-virtualenv ipmitool
-
-
+```
 Create a python virtual environment to install vBMC
-
-
+```
 # virtualenv-3 virtualbmc
 
-
 # . virtualbmc/bin/activate
-
+```
 
 Install virtual BMC in the python virtual environment:
-
-
+```
 (virtualbmc) # pip install virtualbmc
-
+```
 
 Start the vbmcd daemon in the python virtual environment:
 
-
+```
 (virtualbmc) # ./virtualbmc/bin/vbmcd
-
+```
 
 Find the IP address of the bridge connected to the routable network (chucky) in the physical machine:
-
-
+```
 # virsh net-dumpxml chucky
 …
   <bridge name='virbr2' stp='on' delay='0'/>
@@ -291,29 +286,25 @@ Find the IP address of the bridge connected to the routable network (chucky) in 
   <ip address='192.168.30.1' netmask='255.255.255.0'>
   </ip>
 </network>
- 
+```
 Can also be checked with:
-
-
+```
 # ip -4 a show dev virbr2
 5: virbr2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
         inet 192.168.30.1/24 brd 192.168.30.255 scope global virbr2
-
+```
 
 Add the master and worker node VMs to virtual BMC, use the IP obtained before to contact the vbmcd daemon and a unique port for each VM, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
-
-
+```
 (virtualbmc) # for x in {1..3}; do vbmc add --username admin --password secreto \
                           --port 700${x} --address 192.168.30.1 bmipi-master${x}; done
 
-
 (virtualbmc) # for x in {1..2}; do vbmc add --username admin --password secreto \
                           --port 701${x} --address 192.168.30.1 bmipi-worker${x}; done
-
+```
 
 Check that the VMs are accepted:
-
-
+```
 (virtualbmc) # vbmc list
 +---------------+--------+--------------+------+
 | Domain name   | Status | Address          | Port |
@@ -324,20 +315,18 @@ Check that the VMs are accepted:
 | bmipi-worker1 | down   | 192.168.30.1 | 7011 |
 | bmipi-worker2 | down   | 192.168.30.1 | 7012 |
 +---------------+--------+--------------+------+
-
+```
 
 Start a virtual BMC service for every virtual machine instance:
-
-
+```
 (virtualbmc) # for x in {1..3}; do vbmc start bmipi-master${x}; done
 
 
 (virtualbmc) # for x in {1..2}; do vbmc start bmipi-worker${x}; done
-
+```
 
 The status in the vbmc list command changes to running.  This is not the VM running but the BMC service for that VM
-
-
+```
 (virtualbmc) # vbmc list
 +---------------+---------+--------------+------+
 | Domain name   | Status  | Address          | Port |
@@ -348,64 +337,64 @@ The status in the vbmc list command changes to running.  This is not the VM runn
 | bmipi-worker1 | running | 192.168.30.1 | 7011 |
 | bmipi-worker2 | running | 192.168.30.1 | 7012 |
 +---------------+---------+--------------+------+
-
+```
 
 Verify Power status of Vm's
-
-
+```
 (virtualbmc) # for x in {1..3}; do ipmitool -I lanplus -U admin -P secreto \
                     -H 192.168.30.1 -p 700${x} power status; done
 Chassis Power is off
 Chassis Power is off
 Chassis Power is off
 
-
 (virtualbmc) # for x in {1..2}; do ipmitool -I lanplus -U admin -P secreto \
                           -H 192.168.30.1 -p 701${x} power status; done
 Chassis Power is off
 Chassis Power is off
+```
 
+### Add firewall rules to allow the VMs to access the vbmcd service. 
 
-Add firewall rules to allow the VMs to access the vbmcd service
 These rules are created in the physical host:
-
-
+```
 # firewall-cmd –add-port 7001/udp –add-port 7002/udp –add-port 7003/udp \
    –add-port 7011/udp –add-port 7012/udp --zone=libvirt --permanent
 # firewall-cmd --reload
 # firewall-cmd --list-all --zone libvirt
-Set up virtualization in the provisioning VM 
-Set up nested virtualization in the provisioning VM
-https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager
+```
+### Set up virtualization in the provisioning VM 
 
+Further details at [Set up nested virtualization in the provisioning VM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
 
 The support VM with DHCP and DNS services must be already set up and running.
 
-
 If it is not already started, start the provision VM
+```
 # virsh start provision 
-
+```
 
 Connect from the physical host to the provision VM using the IP defined in the DHCP server for that host
+```
 $ ssh root@192.168.30.10
-
+```
 
 Register the provision VM with Red Hat
+```
 # subscription-manager register --user <rh user>
-
+```
 
 Install the host virtualization software:
+```
 # dnf group install virtualization-host-environment
-
+```
 
 Update the Operating System
+```
 # dnf update
 # reboot
-
-
+```
 Verify that the provisioning VM has virtualization correctly set up, last 2 warnings are not relevant they also come up when running the same command in the physical host:
-
-
+```
 provision # virt-host-validate
   QEMU: Checking for hardware virtualization                                     : PASS
   QEMU: Checking if device /dev/kvm exists                                       : PASS
@@ -415,14 +404,17 @@ provision # virt-host-validate
   QEMU: Checking for cgroup 'cpu' controller support                             : PASS
   QEMU: Checking for cgroup 'cpuacct' controller support                         : PASS
   QEMU: Checking for cgroup 'cpuset' controller support                          : PASS
-  QEMU: Checking for cgroup 'memory' controller support                  : PASS
+  QEMU: Checking for cgroup 'memory' controller support                          : PASS
   QEMU: Checking for cgroup 'devices' controller support                         : PASS
   QEMU: Checking for cgroup 'blkio' controller support                           : PASS
   QEMU: Checking for device assignment IOMMU support                             : WARN (No ACPI DMAR table found, IOMMU either disabled in BIOS or not supported by this hardware platform)
   QEMU: Checking for secure guest support                                        : WARN (Unknown if this platform has Secure Guest support)
+```
 
+### Verify DNS resolution in the provisioning VM
 
-Verify DNS resolution in the provisioning VM
+Test that the DNS names of all nodes can be resolved from the provisioning VM
+```
 [root@provision ~]# for x in {1..3}; do dig master${x}.ocp4.tale.net +short; done
 192.168.30.20
 192.168.30.21
@@ -430,52 +422,60 @@ Verify DNS resolution in the provisioning VM
 [root@provision ~]# for x in {1..2}; do dig worker${x}.ocp4.tale.net +short; done
 192.168.30.30
 192.168.30.31
+```
 
+### Preparing the provisioning node for OpenShift Container Platform installation
 
-Preparing the provisioning node for OpenShift Container Platform installation
-https://docs.openshift.com/container-platform/4.9/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#preparing-the-provisioner-node-for-openshift-install_ipi-install-installation-workflow
-
+Further details can be obtained from the [official documentation](https://docs.openshift.com/container-platform/4.9/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#preparing-the-provisioner-node-for-openshift-install_ipi-install-installation-workflow)
 
 Create a non privileged user and provide that user with sudo privileges::
+```
 # useradd kni
 # passwd kni
 # echo "kni ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/kni
 # chmod 0440 /etc/sudoers.d/kni
+```
 
-
-Enable the http service in the firewall:
-Make sure the firewalld service is enabled and running:
+Enable the http service in the firewall. Make sure the firewalld service is enabled and running:
+```
 # systemctl enable firewalld --now
 # systemctl status firewalld
-
+```
 Add the rules:
+```
 $ firewall-cmd --zone=public --add-service=http --permanent
 $ firewall-cmd --reload
+```
 
 Create an ssh key for the new user:
+```
 # su - kni -c "ssh-keygen -t ed25519 -f /home/kni/.ssh/id_rsa -N ''"
-
+```
 
 Log in as the new user on the provisioner node:
+```
 # su - kni
-
+```
 
 Install the following required packages, some may already be installed:
+```
 $ sudo dnf install libvirt qemu-kvm mkisofs python3-devel jq ipmitool
-
+```
 
 Modify the user to add the libvirt group to the newly created user:
+```
 $ sudo usermod --append --groups libvirt kni
-
+```
 
 Start and enable the libvirtd service:
+```
 $ sudo systemctl enable libvirtd --now
 $ sudo systemctl status libvirtd
-
+```
 
 Create the default storage pool and start it:
+```
 $ sudo virsh pool-define-as --name default --type dir --target /var/lib/libvirt/images
-
 
 $ sudo virsh pool-list --all
  Name          State          Autostart
@@ -487,7 +487,7 @@ $ sudo virsh pool-start default
 Pool default started
 
 
-]$ sudo virsh pool-autostart default
+$ sudo virsh pool-autostart default
 Pool default marked as autostarted
 
 
@@ -495,11 +495,14 @@ $ sudo virsh pool-list --all –details
  Name          State        Autostart
 --------------------------------------------
  default          active   yes
+```
 
+### Configure networking in the provisioning VM
 
-Configure networking in the provisioning VM
 Do this from a local terminal or the connection will be dropped half way through the configuration.
+
 Even if a network connection is already active and working follow the next steps:
+```
 # virsh console provision
 # su - kni
 $ sudo nmcli con show
@@ -515,9 +518,10 @@ $ ip -4 a
         inet 192.168.30.10/24 brd 192.168.30.255 scope …
 4: virbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
         inet 192.168.122.1/24 brd 192.168.122.255 scope global virbr0
-
+```
 
 Set up the connection to the routable network
+```
 $ sudo nmcli con down "Wired connection 2"
 Connection 'Wired connection 2' successfully deactivated …
 
@@ -528,49 +532,53 @@ $ sudo nmcli con delete "Wired connection 2"
 $ sudo nmcli con add ifname baremetal type bridge con-name baremetal
 $ sudo nmcli con add type bridge-slave ifname eth1 master baremetal
 Connection 'bridge-slave-eth1' … successfully added.
-
+```
 
 Now the dhcp client should assign the same IP to the new bridge interface, if not, reactivate the connection:
+```
 $ nmcli con down baremetal
 $ nmcli con up baremetal
-
+```
 
 Next the provisioning network interface is reconfigured, this can be done from an ssh connection to the provisioning host since the provisioning network interface does not affect that.
-
-
+```
 $ sudo nmcli con down "Wired connection 1"
 Connection 'Wired connection 1' successfully deactivated …
 $ sudo nmcli con delete "Wired connection 1"
 Connection 'Wired connection 1' … successfully deleted.
 
-
 $ sudo nmcli con add type bridge ifname provision con-name provision
 Connection 'provision' … successfully added.
 $ sudo nmcli con add type bridge-slave ifname eth0 master provision
 Connection 'bridge-slave-eth0' … successfully added.
-
+```
 
 Assign an IPv4 address to the provision bridge.  Use the same IP that the provision bridge is using in the physical host (this may not be really a requirement and any other IP in the provisioning network could be valid):
+```
 $ sudo nmcli con mod provision ipv4.addresses 192.168.14.1/24 \
     ipv4.method manual
-
+```
 
 Activate the provision network connection:
+```
 $ sudo nmcli con up provision
-
+```
 
 Check out the results
+```
 $ nmcli con show provision
 $ ip -4 a
+```
 
+### Get the pull secret, Openshift installer and oc client
 
-Get the pull secret, Openshift installer and oc client
-Get a pull secret from https://console.redhat.com/openshift/install/metal/user-provisioned
-And paste it into a file in the kni user home directory.
+Get a pull secret from [Red Hat](https://console.redhat.com/openshift/install/metal/user-provisioned), and paste it into a file in the kni user home directory.
+```
 $ vim pull-secret.txt
-
+```
 
 Download the Openshift client and installer.  
+```
 $ export VERSION=stable-4.9
 $ export RELEASE_IMAGE=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/release.txt | grep 'Pull From: quay.io' | awk -F ' ' '{print $3}')
 $ export cmd=openshift-baremetal-install
@@ -580,9 +588,9 @@ $ echo $extract_dir
 $ curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/openshift-client-linux.tar.gz | tar zxvf - oc
 $ sudo cp oc /usr/local/bin
 $ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd --to "${extract_dir}" ${RELEASE_IMAGE}
+```
 
-
-Create the install-config.yaml file
+### Create the install-config.yaml file
 
 
 
