@@ -14,7 +14,7 @@
   * [Verify DNS resolution in the provisioning VM](#verify-dns-resolution-in-the-provisioning-vm) 
   * [Preparing the provisioning node for OpenShift Container Platform installation](#preparing-the-provisioning-node-for-openshift-container-platform-installation)
   * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm)
-  * [Get the pull secret, Openshift installer and oc client](#get-the-pull-secret,-openshift-installer-and-oc-client)
+  * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
 
 Create the install-config.yaml file        13
 Install the Openshift cluster        15
@@ -570,7 +570,7 @@ $ nmcli con show provision
 $ ip -4 a
 ```
 
-### Get the pull secret, Openshift installer and oc client
+### Get the pull secret Openshift installer and oc client
 
 Get a pull secret from [Red Hat](https://console.redhat.com/openshift/install/metal/user-provisioned), and paste it into a file in the kni user home directory.
 ```
