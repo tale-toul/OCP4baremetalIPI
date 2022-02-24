@@ -69,7 +69,7 @@ Check if nested virtualization is supported, a value of 1 means that it is suppo
 1
 ```
 
-Enable nested virtualization if it is not, this is a one time configuration [Enabling nested virtualization in KV](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#_enabling_nested_virtualization): 
+Enable nested virtualization if it is not, [Enabling nested virtualization in KV](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#_enabling_nested_virtualization): 
 
 * Shut down all running KVM VMs
 ```
@@ -89,17 +89,18 @@ Enable nested virtualization if it is not, this is a one time configuration [Ena
 options kvm_intel nested=1
 ```
 
-Later the provisioning V must also be configured to support nested virtualization.
+Later the provisioning VM must also be configured to support nested virtualization.
 
-### Create the routable baremetal and provisioning networks in KV
+### Create the routable baremetal and provisioning networks in KVM
 
-The definition for the routable baremetal network can be found in the file _net-chucky.xml_.  It is a simple definition of a routable network with no DHCP using the network address space 192.168.30.0/24
-The definition for the provisioning network can be found in the file net-provision.xml.  The file contains the definition of a non routable network with no DHCP using the network address space 192.168.14.0/24
+The definition for the __routable__ network can be found in the file _net-chucky.xml_ in this repository.  It is a simple definition of a routable network with no DHCP, using the network address space 192.168.30.0/24
+
+The definition for the __provisioning__ network can be found in the file net-provision.xml in this repository.  The file contains the definition of a non routable network with no DHCP, using the network address space 192.168.14.0/24
 
 Create the networks with the commands:
 ```
-# virsh net-define chucky.xml
-# virsh net-define provision.xml
+# virsh net-define net-chucky.xml
+# virsh net-define net-provision.xml
 ```
 Start the networks and enable autostart so they will be started automatically next time
 
@@ -139,7 +140,7 @@ Restore the SELinux file tags:
 $ sudo restorecon -R -Fv /var/lib/libvirt/images/provision.qcow2
 ```
 
-Create the V instance based on the above image with the following commands.  The AC address is specified in the command line to make it predictable and easier to match to later configuration files:
+Create the VM instance based on the above image with the following commands.  The AC address is specified in the command line to make it predictable and easier to match to later configuration files:
 ```
 # export V_NAE=provision
 # export DST_AI_PATH="/var/lib/libvirt/images"
@@ -157,7 +158,7 @@ Create the V instance based on the above image with the following commands.  The
             --noautoconsole --console pty,target_type=virtio
 ```
 
-Resize the V disk, do this before starting the V:
+Resize the VM disk, do this before starting the V:
 ```
 # qemu-img resize ${DST_AI_IAGE} 120G
 ```
@@ -210,7 +211,7 @@ Change the owner and group to qemu:
     /var/lib/libvirt/images/BIPI-${x}.qcow2; done
 ```
 
-Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the V cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
+Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
 The AC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 
@@ -244,7 +245,7 @@ Change the owner and group to qemu:
    /var/lib/libvirt/images/BIPI-${x}.qcow2; done
 ```
 
-Create the 2 worker nodes using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the V cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
+Create the 2 worker nodes using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
 The AC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 ```
@@ -336,7 +337,7 @@ Start a virtual BC service for every virtual machine instance:
 (virtualbmc) # for x in {1..2}; do vbmc start bmipi-worker${x}; done
 ```
 
-The status in the vbmc list command changes to running.  This is not the V running but the BC service for that V
+The status in the vbmc list command changes to running.  This is not the VM running but the BC service for that V
 ```
 (virtualbmc) # vbmc list
 +---------------+---------+--------------+------+
@@ -373,23 +374,23 @@ These rules are created in the physical host:
 # firewall-cmd --reload
 # firewall-cmd --list-all --zone libvirt
 ```
-### Set up virtualization in the provisioning V 
+### Set up virtualization in the provisioning VM 
 
 Further details at [Set up nested virtualization in the provisioning V](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
 
-The support V with DHCP and DNS services must be already set up and running.
+The support VM with DHCP and DNS services must be already set up and running.
 
 If it is not already started, start the provision V
 ```
 # virsh start provision 
 ```
 
-Connect from the physical host to the provision V using the IP defined in the DHCP server for that host
+Connect from the physical host to the provision VM using the IP defined in the DHCP server for that host
 ```
 $ ssh root@192.168.30.10
 ```
 
-Register the provision V with Red Hat
+Register the provision VM with Red Hat
 ```
 # subscription-manager register --user <rh user>
 ```
@@ -404,7 +405,7 @@ Update the Operating System
 # dnf update
 # reboot
 ```
-Verify that the provisioning V has virtualization correctly set up, last 2 warnings are not relevant they also come up when running the same command in the physical host:
+Verify that the provisioning VM has virtualization correctly set up, last 2 warnings are not relevant they also come up when running the same command in the physical host:
 ```
 provision # virt-host-validate
   QEU: Checking for hardware virtualization                                     : PASS
@@ -603,7 +604,7 @@ $ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd -
 
 ### Create the install-config.yaml file
 
-The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and AC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support V ](#creating-the-support-vm)
+The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and AC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
 
 Review the install-config.yaml file provided and add at the end of the file the pull secret downloaded in the previous section, and an the ssh key, the one created for the kni user earlier could be user for example.
 
@@ -664,7 +665,7 @@ Check the installation log in the provisioning host as the kni user:
 ```
 $ tail -f ocp4/.openshift_install.log
 ```
-Check if the bootstrap V has been created and is running in the provisioning node (nested virtualization):
+Check if the bootstrap VM has been created and is running in the provisioning node (nested virtualization):
 ```
 [kni@provision ~]$ sudo virsh list --all
  Id        Name                            State
@@ -674,7 +675,7 @@ Check if the bootstrap V has been created and is running in the provisioning nod
 
 If the bootstrap is running, ssh into it and check the logs there.
 
-To get the bootstrap V IP run the following commands in the provisioning V:
+To get the bootstrap VM IP run the following commands in the provisioning V:
 ```
 $ sudo virsh list
 $ sudo virsh domifaddr <bootstrap name> --source arp
@@ -748,11 +749,11 @@ Connecto to libvirt from the remote host with a command like:
 $ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=benaka.pem'
 ```
 
-In the “Display VNC” section of the V hardware details in virt-manager, the field Address must contain the value “All interfaces”.  This can be set at V creation with virt-manager as the examples in this document show, using the option __--graphics vnc,listen=0.0.0.0__.
+In the “Display VNC” section of the VM hardware details in virt-manager, the field Address must contain the value “All interfaces”.  This can be set at VM creation with virt-manager as the examples in this document show, using the option __--graphics vnc,listen=0.0.0.0__.
 
 ## Creating the support V
 
-This V will run the DHCP and DNS services.  It is based on the rhel 8 qcow2 image
+This VM will run the DHCP and DNS services.  It is based on the rhel 8 qcow2 image
 
 Copy the qcow2 image file to the libvirt images directory 
 
@@ -760,7 +761,7 @@ Copy the qcow2 image file to the libvirt images directory
 # cp rhel-8.5-x86_64-kvm.qcow2 /var/lib/libvirt/images/dhns.qcow2
 ```
 
-Create the V instance based on the above image with the following commands:
+Create the VM instance based on the above image with the following commands:
 ```
 # virt-customize -a /var/lib/libvirt/images/dhns.qcow2 \
     --root-password password:mypassword --uninstall cloud-init
@@ -788,7 +789,7 @@ Set up IP configuration.  Networking will be reconfigured during the setup of th
 # nmcli con up eth0
 ```
 
-Subscribe the V to Red Hat
+Subscribe the VM to Red Hat
 
 ```
 # subscription-manager register --user <rh user>
@@ -983,7 +984,7 @@ $ sudo systemctl enable libvirtd
 Create the virtual networks: routable and provisioning using the xml definitions at the top of the doc
 
 
-### Import the V providing DHCP and DNS services
+### Import the VM providing DHCP and DNS services
 
 * Copy the qcow2 and the xml definition files:
 ```
@@ -1113,7 +1114,7 @@ $ curl -k --user admin:password  https://172.31.75.189:8080/redfish/v1/Systems/
 
 ### Add firewall rules to allow access to sushy-tools
 
-In order for the bootstrap V to be able to control the cluster VMs via redfish protocol a firewall rule allowing access to the port where the susy-tools server is listening needs to be added to the physical host: 
+In order for the bootstrap VM to be able to control the cluster VMs via redfish protocol a firewall rule allowing access to the port where the susy-tools server is listening needs to be added to the physical host: 
 ```
 $ sudo firewall-cmd --add-port 8080/tcp --zone=libvirt --permanent
 $ sudo firewall-cmd --reload
@@ -1124,16 +1125,16 @@ $ sudo firewall-cmd --list-all --zone libvirt
 
 A DNS server is required to resolve the names of the hosts in the cluster and some additional service names.  Follow the instructions in the section [Creating the support V](#creating-the-support-vm).
 
-Alternatively the support V can be imported following the instructions in section [Import the V providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services).
+Alternatively the support VM can be imported following the instructions in section [Import the VM providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services).
 
-The DHCP service is optional but recommended, it is used to provide network configuration for the provisioning V and the nodes in the OCP cluster.
+The DHCP service is optional but recommended, it is used to provide network configuration for the provisioning VM and the nodes in the OCP cluster.
 
 ### Create the provisioning V
 
-Create the provisioning V following the instructions in section [Create the provisioning V](#create-the-provisioning-vm) , but in this case the command used to create the V is slightly different: 
+Create the provisioning VM following the instructions in section [Create the provisioning V](#create-the-provisioning-vm) , but in this case the command used to create the VM is slightly different: 
 
 * The reference to the provision network is removed since no such network is used
-* ake sure the AC address is unique and is the one used by the DHCP server for this V in the support V
+* ake sure the AC address is unique and is the one used by the DHCP server for this VM in the support V
 ```
 $ sudo virt-install --name=provision --vcpus=4 --ram=24096 \
   --disk path=/var/lib/libvirt/images/provision.qcow2,bus=virtio,size=120  \
