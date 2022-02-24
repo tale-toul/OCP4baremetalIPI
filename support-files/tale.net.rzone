@@ -1,0 +1,20 @@
+$TTL        86400
+@           IN          SOA         tale.net. root.example.com.  (
+        202202023 ; serial
+        28800          ; refresh
+        14400          ; retry
+        3600000        ; expire
+        86400 )        ; minimum
+                IN  NS          dhns.tale.net.
+3               IN  PTR         dhns.tale.net.
+10              IN  PTR         provision.tale.net.
+20              IN  PTR         master1.ocp4.tale.net.
+21              IN  PTR         master2.ocp4.tale.net.
+22              IN  PTR         master3.ocp4.tale.net.
+30              IN  PTR         worker1.ocp4.tale.net.
+31              IN  PTR         worker2.ocp4.tale.net.
+
+
+100             IN  PTR         api.ocp4.tale.net.
+101             IN  PTR         api-int.ocp4.tale.net.
+

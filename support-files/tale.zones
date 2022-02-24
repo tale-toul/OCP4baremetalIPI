@@ -1,0 +1,12 @@
+zone "tale.net" IN {
+            type master;
+            file "tale.net.zone";
+};
+
+
+//backward zone
+zone "30.168.192.in-addr.arpa" IN {
+            type master;
+            file "tale.net.rzone";
+};
+

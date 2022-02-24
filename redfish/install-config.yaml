@@ -1,0 +1,75 @@
+apiVersion: v1
+baseDomain: tale.net
+metadata:
+  name: ocp4
+networking:
+  networkType: OVNKubernetes
+  machineCIDR: 192.168.30.0/24
+compute:
+- name: worker
+  replicas: 2
+controlPlane:
+  name: master
+  replicas: 3
+  platform:
+        baremetal: {}
+platform:
+  baremetal:
+        apiVIP: 192.168.30.100
+        ingressVIP: 192.168.30.110
+        provisioningNetwork: "Disabled"
+        externalBridge: baremetal
+        hosts:
+          - name: bmipi-master1
+              role: master
+              bmc:
+                  address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/2451…4bc82
+                  disableCertificateVerification: True
+                  username: admin
+                  password: password
+              bootMACAddress: 52:54:00:a9:6d:71
+              rootDeviceHints:
+                  deviceName: /dev/vda
+          - name: bmipi-master2
+              role: master
+              bmc:
+                  address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336…6ec                  disableCertificateVerification: True
+                  username: admin
+                  password: password
+              bootMACAddress: 52:54:00:a9:6d:72
+          rootDeviceHints:
+                  deviceName: /dev/vda
+          - name: bmipi-master3
+              role: master
+              bmc:
+                  address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/36a1…7cb8e
+                  disableCertificateVerification: True
+                  username: admin
+                  password: password
+              bootMACAddress: 52:54:00:a9:6d:73
+          rootDeviceHints:
+                  deviceName: /dev/vda
+          - name: bmipi-worker1
+              role: worker
+              bmc:
+                  address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/11ad…4a489
+                  disableCertificateVerification: True
+                  username: admin
+                  password: password
+              bootMACAddress: 52:54:00:a9:6d:91
+          rootDeviceHints:
+                  deviceName: /dev/vda
+          - name: bmipi-worker2
+              role: worker
+              bmc:
+                  address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/639…5a7a4e
+                  disableCertificateVerification: True
+                  username: admin
+                  password: password
+              bootMACAddress: 52:54:00:a9:6d:92
+          rootDeviceHints:
+                  deviceName: /dev/vda
+pullSecret: ‘’
+sshKey: |
+
+
