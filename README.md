@@ -575,7 +575,7 @@ Connection 'provision' … successfully added.
 Connection 'bridge-slave-eth0' … successfully added.
 ```
 
-Assign an IPv4 address to the provision bridge.  Use the same IP that the provision bridge is using in the physical host (this may not be really a requirement and any other IP in the provisioning network could be valid):
+Assign an IPv4 address to the provision bridge.  Make sure the IP used is in the provisioning network but outside the DHCP range defined in the install-config.yaml file:
 ```
 # nmcli con mod provision ipv4.addresses 192.168.14.14/24 \
     ipv4.method manual
@@ -716,7 +716,6 @@ Error: Unable to establish IPI v2 / RCP+ session
 The same command from the provisioning host does not work either.
 However that command does work from the physical host so it looks like this is a firewall issue.
 ```
-
 
 To use tcpdump inside the bootstrap machine check the following [documentation section](https://docs.openshift.com/container-platform/4.9/support/gathering-cluster-data.html#about-toolbox_gathering-cluster-data) and [KCS](https://access.redhat.com/articles/4365651)
 
