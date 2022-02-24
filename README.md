@@ -152,7 +152,7 @@ Copy the qcow2 image file to the libvirt images directory
 
 Restore the SELinux file tags:
 ```
-$ sudo restorecon -R -Fv /var/lib/libvirt/images/provision.qcow2
+# restorecon -R -Fv /var/lib/libvirt/images/provision.qcow2
 ```
 
 Create the VM instance based on the above image with the following commands.  The MAC address is specified in the command line to make it predictable and easier to match to other configuration files:
@@ -168,7 +168,7 @@ Create the VM instance based on the above image with the following commands.  Th
             --noautoconsole --console pty,target_type=virtio
 ```
 
-Resize the VM disk, do this before starting the VM:
+Resize the VM disk to match the size specified in the previous command.  Do this before starting the VM:
 ```
 # qemu-img resize /var/lib/libvirt/images/provision.qcow2 120G
 ```
@@ -183,9 +183,9 @@ Connect to the provision VM.  There are two alternatives:
 ```
 # virsh console provision
 ```
-* Through an ssh connection
+* Through an ssh connection, only if the VM already has a valid network configuration, this may require the support VM with DNS and DHCP services running.
 ```
-$ sudo virsh domifaddr provision --source arp
+# virsh domifaddr provision --source arp
  Name           MAC address              Protocol         Address
 -------------------------------------------------------------------------------
  vnet2          52:54:00:9d:41:3c        ipv4             192.168.30.10/0
@@ -193,15 +193,17 @@ $ sudo virsh domifaddr provision --source arp
 $ ssh root@192.168.30.10
 
 [root@localhost ~]# growpart /dev/vda 3
-…
+...
 [root@localhost ~]# xfs_growfs /dev/vda3
-…
+...
 [root@localhost ~]# df -Ph
+...
+[root@provision ~]# exit
 ```
 
 ### Create the 3 empty master nodes
 
-These VMs don’t include an OS, it will be installed during the cluster deployment.
+These VMs don’t include an OS, it will be installed during OCP cluster deployment.
 
 Create the empty disks
 ```
@@ -210,7 +212,7 @@ Create the empty disks
    done
 ```
 
-Update the SELinux file tags
+Update the SELinux file labels
 ```
 # restorecon -R -Fv /var/lib/libvirt/images/bmipi-master*
 ```
@@ -236,7 +238,7 @@ The MAC addresses for the routable and provisioning network NICs are specified s
 
 ### Create two empty worker nodes
 
-These don’t include an OS
+These don’t include an OS, it will be installed during OCP cluster deployment.
 
 First create the empty disks:
 ```
@@ -244,7 +246,7 @@ First create the empty disks:
    qemu-img create -f qcow2 /var/lib/libvirt/images/bmipi-${x}.qcow2 80G; done
 ```
 
-Update the SELinux file tags
+Update the SELinux file labels
 ```
 # restorecon -R -Fv /var/lib/libvirt/images/bmipi-worker*
 ```
@@ -274,7 +276,9 @@ Check that all VMs are created:
 
 ### Install and set up vBMC in the physical node
 
-Install the following packages in the physical server
+The next steps must be taken in the physical host.
+
+Install the following packages
 
 ```
 # dnf install gcc libvirt-devel python3-virtualenv ipmitool
@@ -308,9 +312,9 @@ Find the IP address of the bridge connected to the routable network (chucky) in 
 ```
 Can also be checked with:
 ```
-# ip -4 a show dev virbr2
-5: virbr2: <BROADCAST,ULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-        inet 192.168.30.1/24 brd 192.168.30.255 scope global virbr2
+# ip -4 a show dev chucky
+5: chucky: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    inet 192.168.30.1/24 brd 192.168.30.255 scope global chucky
 ```
 
 Add the master and worker node VMs to virtual BMC, use the IP obtained before to contact the vbmcd daemon and a unique port for each VM, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of `virsh list –all` command.  A username and password is associated to each node that must be used later to control the VMs; in this case all nodes use the same username/password combination.  Keep in mind that the ipmi protocol used by BMC is not encrypted or secured in any way:
@@ -370,13 +374,16 @@ Chassis Power is off
 Chassis Power is off
 Chassis Power is off
 ```
+The KVM VMs can now be controlled through the vBMC server using the ipmi protocol.
 
 ### Add firewall rules to allow the VMs to access the vbmcd service. 
 
+In order for the bootstrap server to be able to start the KVM VMs a rule must be added to the physical host firewall allowing connections from machines in the virtual networks chucky and provision to reach the ports defined earlier for each VM in vBMC
+
 These rules are created in the physical host:
 ```
-# firewall-cmd –add-port 7001/udp –add-port 7002/udp –add-port 7003/udp \
-   –add-port 7011/udp –add-port 7012/udp --zone=libvirt --permanent
+# firewall-cmd --add-port 7001/udp --add-port 7002/udp --add-port 7003/udp \
+   --add-port 7011/udp --add-port 7012/udp --zone=libvirt --permanent
 # firewall-cmd --reload
 # firewall-cmd --list-all --zone libvirt
 ```
@@ -384,9 +391,9 @@ These rules are created in the physical host:
 
 Further details at [Set up nested virtualization in the provisioning VM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
 
-The support VM with DHCP and DNS services must be already setup and running.
+The support VM with DHCP and DNS services must be setup and running at this point.  For details on how to create this VM check the section [Creating the support VM](#creating-the-support-vm)  
 
-If it is not already started, start the provision VM
+If it is not running, start the provision VM
 ```
 # virsh start provision 
 ```
@@ -399,6 +406,8 @@ $ ssh root@192.168.30.10
 Register the provision VM with Red Hat
 ```
 # subscription-manager register --user <rh user>
+# subscription-manager list --available
+# subscription-manager attach --pool=8a589f...
 ```
 
 Install the host virtualization software:
@@ -411,7 +420,7 @@ Update the Operating System
 # dnf update
 # reboot
 ```
-Verify that the provisioning VM has virtualization correctly set up, last 2 warnings are not relevant they also come up when running the same command in the physical host:
+Verify that the provisioning VM has virtualization correctly set up, the last 2 warnings are not relevant, they also come up when running the same command in the physical host:
 ```
 provision # virt-host-validate
   QEU: Checking for hardware virtualization                                     : PASS
@@ -493,44 +502,40 @@ $ sudo systemctl status libvirtd
 
 Create the default storage pool and start it:
 ```
-$ sudo virsh pool-define-as --name default --type dir --target /var/lib/libvirt/images
+$ virsh -c qemu:///system pool-define-as --name default --type dir --target /var/lib/libvirt/images 
 
-$ sudo virsh pool-list --all
+$ virsh -c qemu:///system pool-list --all
  Name          State          Autostart
 -----------------------------------------
  default           inactive   no
 
-
-$ sudo virsh pool-start default
+$ virsh -c qemu:///system pool-start default
 Pool default started
 
-
-$ sudo virsh pool-autostart default
+$ virsh -c qemu:///system pool-autostart default
 Pool default marked as autostarted
 
-
-$ sudo virsh pool-list --all –details
+$ virsh -c qemu:///system pool-list --all --details
  Name          State        Autostart
 --------------------------------------------
  default          active   yes
 ```
 
-### Configure networking in the provisioning V
+### Configure networking in the provisioning VM
 
 Do this from a local terminal or the connection will be dropped half way through the configuration.
 
-Even if a network connection is already active and working follow the next steps:
+Even if a network connection is already active and working, follow the next steps:
 ```
 # virsh console provision
-# su - kni
-$ sudo nmcli con show
+# nmcli con show
 NAME                                 UUID                                                                 TYPE              DEVICE
 Wired connection 2  1af5c70e-3d13-3ca7-92a9-e2582e653372  ethernet  eth1   
 virbr0                  b1ff2de8-0b3f-4d60-bb91-8b03078fc155               bridge            virbr0
 Wired connection 1  3defbd59-64c2-3806-947a-c1be05a4752e  ethernet  --
 
 
-$ ip -4 a
+# ip -4 a
 …
 3: eth1: <BROADCAST,ULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
         inet 192.168.30.10/24 brd 192.168.30.255 scope …
@@ -540,46 +545,46 @@ $ ip -4 a
 
 Set up the connection to the routable network
 ```
-$ sudo nmcli con down "Wired connection 2"
+# nmcli con down "Wired connection 2"
 Connection 'Wired connection 2' successfully deactivated …
 
+# nmcli con delete "Wired connection 2"
 
-$ sudo nmcli con delete "Wired connection 2"
 
-
-$ sudo nmcli con add ifname baremetal type bridge con-name baremetal
-$ sudo nmcli con add type bridge-slave ifname eth1 master baremetal
+# nmcli con add ifname baremetal type bridge con-name baremetal
+# nmcli con add type bridge-slave ifname eth1 master baremetal
 Connection 'bridge-slave-eth1' … successfully added.
 ```
 
 Now the dhcp client should assign the same IP to the new bridge interface, if not, reactivate the connection:
 ```
-$ nmcli con down baremetal
-$ nmcli con up baremetal
+# nmcli con down baremetal
+# nmcli con up baremetal
 ```
 
 Next the provisioning network interface is reconfigured, this can be done from an ssh connection to the provisioning host since the provisioning network interface does not affect that.
 ```
-$ sudo nmcli con down "Wired connection 1"
+# nmcli con down "Wired connection 1"
 Connection 'Wired connection 1' successfully deactivated …
-$ sudo nmcli con delete "Wired connection 1"
+# nmcli con delete "Wired connection 1"
 Connection 'Wired connection 1' … successfully deleted.
 
-$ sudo nmcli con add type bridge ifname provision con-name provision
+# nmcli con add type bridge ifname provision con-name provision
 Connection 'provision' … successfully added.
-$ sudo nmcli con add type bridge-slave ifname eth0 master provision
+# nmcli con add type bridge-slave ifname eth0 master provision
 Connection 'bridge-slave-eth0' … successfully added.
 ```
 
 Assign an IPv4 address to the provision bridge.  Use the same IP that the provision bridge is using in the physical host (this may not be really a requirement and any other IP in the provisioning network could be valid):
 ```
-$ sudo nmcli con mod provision ipv4.addresses 192.168.14.1/24 \
+# nmcli con mod provision ipv4.addresses 192.168.14.14/24 \
     ipv4.method manual
 ```
 
 Activate the provision network connection:
 ```
-$ sudo nmcli con up provision
+# nmcli con down provision
+# nmcli con up provision
 ```
 
 Check out the results
@@ -612,7 +617,7 @@ $ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd -
 
 The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and MAC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
 
-Review the install-config.yaml file provided and add at the end of the file the pull secret downloaded in the previous section, and an the ssh key, the one created for the kni user earlier could be user for example.
+Review the install-config.yaml file provided, add at the end of the file the pull secret downloaded in the previous section, and an ssh public key, the one created for the kni user earlier for example.
 
 ### Install the Openshift cluster
 
@@ -639,7 +644,7 @@ Check the compute hosts:
 Chassis Power is off
 Chassis Power is off
 ```
-If a previous failed installation happened, remove old bootstrap resources if any are left over from a previous deployment attempt
+If a previous failed installation happened, remove old bootstrap resources if any are left over from a previous deployment attempt.  The error about missing volume vda is normal, nothing to worry about.
 ```
 $ ./openshift-baremetal-install destroy cluster --dir ocp4
 
@@ -658,9 +663,7 @@ $ sudo virsh undefine ocp4-876p7-bootstrap --remove-all-storage
 error: Storage pool 'ocp4-876p7-bootstrap' for volume 'vda' not found.
 Domain ocp4-876p7-bootstrap has been undefined
 ```
-The error about missing volume vda is normal, nothing to worry about.
-
-Run the installation from the provisioning host:
+Finally run the installer from the provisioning host:
 ```
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
 ```
@@ -731,7 +734,7 @@ $ oc -n openshift-machine-api get bmh
 
 ### Connecting to the VMs with virt-manager
 
-This instructions can be directly applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
+This instructions can be applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
 
 Add the ec2-user to the libvirt group:
 ```
@@ -741,7 +744,6 @@ $ virsh -c qemu:///system list
 
 Add firewall rules in the physical host to connect to the VNC ports. Better to use a range of ports
 ```
-$ sudo firewall-cmd --list-all --zone public
 $ sudo firewall-cmd --add-port 5900-5910/tcp --zone=public  --permanent
 $ sudo firewall-cmd --reload
 $ sudo firewall-cmd --list-all --zone public
@@ -749,15 +751,17 @@ $ sudo firewall-cmd --list-all --zone public
 
 Add the same ports above to the security rule in the AWS instance
 
-
-Connecto to libvirt from the remote host with a command like:
+Connect to libvirt daemon from the local host using virt-manager, with a command like:
 ```
 $ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=benaka.pem'
 ```
+This command may take a couple minutes before actually showing the virt-manager interface.
 
-In the “Display VNC” section of the VM hardware details in virt-manager, the field Address must contain the value “All interfaces”.  This can be set at VM creation with virt-manager as the examples in this document show, using the option __--graphics vnc,listen=0.0.0.0__.
+![Virt manager](images/virt-manager.png)
 
-## Creating the support V
+In the “Display VNC” section of the VM hardware details in virt-manager, the field Address must contain the value __All interfaces__.  This can be set at VM creation with virt-manager as the examples in this document show, using the option __--graphics vnc,listen=0.0.0.0__.
+
+## Creating the support VM
 
 This VM will run the DHCP and DNS services.  It is based on the rhel 8 qcow2 image
 
@@ -902,7 +906,7 @@ Select an existing key pair or create a new one.  If a new one is created, downl
 ```
 $ chmod 0400 kikiriki.pem
 ```
-Tick the acknowledgement message -> __Launch Instances__
+Tick the acknowledgement message " __Launch Instances__"
 
 The metal instance will take a few minutes to start and get ready.  When the instance is up and running, connect via ssh using the key pair file and its public IP address.  This public IP will change when the host is rebooted.
 ```
