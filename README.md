@@ -878,30 +878,33 @@ After any modification to the configuration file restart the dhcpd daemon and ch
 
 ## Setup the physical host in AWS
 
-This section describes how to set up a bare metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KVM virtual machines will run.
+This section describes how to set up a metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KVM virtual machines will run.
 
 The region used is N. Virginia as this is the more affordable one I could find.
 
-In the AWS web site go to EC2 -> Instances -> Launch new instances.
+In the AWS web site go to __EC2__ -> __Instances__ -> __Launch new instances__
 
-Select the AI “Red Hat Enterprise Linux 8 (HVM), SSD Volume Type”, 64 bit (x86) architecture must be selected.
+Select the AMI __Red Hat Enterprise Linux 8 (HVM), SSD Volume Type__, 64 bit (x86) architecture must be selected.
 
-In the Instance type page select c5n.metal (192GB RA, 72 vCPUs)
+In the Instance type page select __c5n.metal__ (192GB RAM, 72 vCPUs) -> __Configure Instance__
 
-Select the VPC and subnet where to deploy the host.  If required, create them.
+Select the VPC and subnet where the host will be deployed.  The subnet must have Internet access properly configured and the instance must get a public IP.
 
-ake sure the instance gets a public IP.
+Go to the __Add Storage__ section and set the size of the root device (/dev/sda1) to 40 GB.  Add a new EBS volume (/dev/sdb) of 1000 GB, select the option __Delete on Termination__ for both volumes.
 
-Go to the “Add Storage” section and set the size of the root device (/dev/sda1) to 40 GB and add a new EBS volume (/dev/sdb) of 1000 GB, select the option “delete on termination” for both volumes.
+Go to __Add Tags__ section -> __Add Tag__ -> Key=__Name__; Value=__baremetal-ipi__.  This is an optional step, but helps in identifying the instance when more instance exist.
 
-Go to Review and Launch -> Launch
+Go to the __Configure Security Group__ section.  Optionally for security reasons set the source for the SSH connections to __My IP__.  Add a new rule for the VMs VNC service: __Add Rule__ -> Type=__Custom TCP__; Protocol=__TCP__; Port Range=__5900-5910__; Source=__My IP__; Description=__VNC service__
+
+Go to __Review and Launch__ -> __Launch__
 
 Select an existing key pair or create a new one.  If a new one is created, download the key pair file and change its permissions:
 ```
 $ chmod 0400 kikiriki.pem
 ```
+Tick the acknowledgement message -> __Launch Instances__
 
-When the instance is up and running, connect via ssh using the key pair file and the public IP address of the machine.  This public IP can change when the host is rebooted.
+The metal instance will take a few minutes to start and get ready.  When the instance is up and running, connect via ssh using the key pair file and its public IP address.  This public IP will change when the host is rebooted.
 ```
 $ ssh -i kikiriki.pem ec2-user@35.178.191.131
 ```
@@ -926,11 +929,11 @@ Update the rest of the packages
 $ sudo dnf update
 ```
 
-In the AWS web site, go to EC2 -> Instances -> Select the newly created instance -> Instance State -> Stop Instance
+Shutdown the instance.  In the AWS web site, go to __EC2__ -> __Instances__ -> Select the newly created instance -> __Instance State__ -> __Stop Instance__
 
-When the instance shows a state of Stopped, go to Instance State -> Start instance.
+When the instance shows a state of __Stopped__, go to __Instance State__ -> __Start instance__
 
-When the instance is in state Running and has passed all Status checks.  Get the possibly new public IP and ssh into it
+When the instance is in state Running and has passed all Status checks.  Get its public IP and ssh into it
 ```
 $ ssh -i kikiriki.pem ec2-user@18.170.69.216
 ```
@@ -954,7 +957,7 @@ Format the partition:
 $ sudo mkfs.xfs /dev/nvme1n1p1
 ```
 
-ount the partition in /var/lib/libvirt/images
+Mount the partition in /var/lib/libvirt/images
 
 * Get the partition ID
 ```
