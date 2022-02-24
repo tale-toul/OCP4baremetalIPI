@@ -4,6 +4,7 @@
 
 * [Introduction](#introduction)
 * [Reference documentation](#reference-documentation)
+* [Preparing the Hypervisor](#preparing-the-hypervisor)
 * [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
   * [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
   * [Create the provisioning VM](#create-the-provisioning-vm) 
@@ -34,7 +35,7 @@
   * [Setup DNS service](#setup-dns-service) 
   * [Create the provisioning VM](#create-the-provisioning-vm)
   * [Create the empty cluster hosts](#create-the-empty-cluster-hosts) 
-  * [Prepare the provision V](#prepare-the-provision-vm) 
+  * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
   * [Install the Openshift-cluster](#install-the-openshift-cluster) 
 
@@ -53,6 +54,20 @@ The documentation contains instructions on how to deploy the cluster with and wi
 The official documentation explains in detail how to install an Openshift 4 cluster using the baremetal IPI method:
 [Deploying installer-provisioned clusters on bare metal Overview](https://docs.openshift.com/container-platform/4.9/installing/installing_bare_metal_ipi/ipi-install-overview.html)
 
+## Preparing the Hypervisor
+
+The main two requirements for the physical host are:
+
+* Contains enough compute resources (memory, CPU, disk) to support 6 or 7 virtual machines.  At least 64GB memory, 16 CPU cores and 500GB disk space is required.
+* Supports libvirt/KVM virtualization 
+
+The hypervisor's Operating System used in this instructions is RHEL 8, other linux distributions could be used but there will be some differences in the name of the packages installed, configuration files and options.
+
+Refer to the section [Setup the physical host in AWS](#setup-the-physical-host-in-aws) to create a hypervisor host based on a metal instance in AWS.  
+
+If a local server is going to be used, install and update the Operating System, register it with Red Hat (if using RHEL), and install the libvirt packages, check the section [Setup the physical host in AWS](#setup-the-physical-host-in-aws) for more details.
+
+
 ## Provisioning Network Based Architecture Design
 
 The architecture design for this cluster is as follows:
@@ -69,7 +84,7 @@ Check if nested virtualization is supported, a value of 1 means that it is suppo
 1
 ```
 
-Enable nested virtualization if it is not, [Enabling nested virtualization in KV](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#_enabling_nested_virtualization): 
+Enable nested virtualization if it is not, [Enabling nested virtualization in KVM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#_enabling_nested_virtualization): 
 
 * Shut down all running KVM VMs
 ```
@@ -125,9 +140,9 @@ Check the network configuration in the host, new bridges should appear
 # nmcli con show
 ```
 
-### Create the provisioning V
+### Create the provisioning VM
 
-Get the qcow2 image for RHEL 8 from access.redhat.com -> Downloads -> Red Hat Enterprise Linux 8 -> Red Hat Enterprise Linux 8.5 KVM Guest Image
+Get the qcow2 image for RHEL 8 from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on __Red Hat Enterprise Linux 8__ and download __Red Hat Enterprise Linux 8.5 KVM Guest Image__
 
 Copy the qcow2 image file to the libvirt images directory 
 ```
@@ -140,17 +155,12 @@ Restore the SELinux file tags:
 $ sudo restorecon -R -Fv /var/lib/libvirt/images/provision.qcow2
 ```
 
-Create the VM instance based on the above image with the following commands.  The AC address is specified in the command line to make it predictable and easier to match to later configuration files:
+Create the VM instance based on the above image with the following commands.  The MAC address is specified in the command line to make it predictable and easier to match to other configuration files:
 ```
-# export V_NAE=provision
-# export DST_AI_PATH="/var/lib/libvirt/images"
-# export DST_AI_IAGE=$DST_AI_PATH/$V_NAE.qcow2
+# virt-customize -a /var/lib/libvirt/images/provision.qcow2 --root-password password:mypassword --uninstall cloud-init
 
-# virt-customize -a $DST_AI_IAGE --root-password password:mypassword \
-   --uninstall cloud-init
-
-# virt-install --name=${V_NAE} --vcpus=4 --ram=24096 \
-            --disk path=${DST_AI_IAGE},bus=virtio,size=120 \
+# virt-install --name=provision --vcpus=4 --ram=24096 \
+            --disk path=/var/lib/libvirt/images/provision.qcow2,bus=virtio,size=120 \
             --os-variant rhel8.5 --network network=provision \
            --cpu host-passthrough,cache.mode=passthrough \
             --network network=chucky,model=virtio,mac=52:54:00:9d:41:3c \
@@ -158,25 +168,25 @@ Create the VM instance based on the above image with the following commands.  Th
             --noautoconsole --console pty,target_type=virtio
 ```
 
-Resize the VM disk, do this before starting the V:
+Resize the VM disk, do this before starting the VM:
 ```
-# qemu-img resize ${DST_AI_IAGE} 120G
-```
-
-Complete the resizing from inside the V
-```
-# virsh start $V_NAE
+# qemu-img resize /var/lib/libvirt/images/provision.qcow2 120G
 ```
 
-Connect to the provision V.  There are two alternatives:
-* From the virtual console (To leave console mode use CTRL+] )
+Complete the resizing from inside the VM
 ```
-# virsh console $V_NAE
+# virsh start provision
 ```
-* From an ssh connection
+
+Connect to the provision VM.  There are two alternatives:
+* Through the virtual console (To leave console mode use CTRL+] )
+```
+# virsh console provision
+```
+* Through an ssh connection
 ```
 $ sudo virsh domifaddr provision --source arp
- Name           AC address              Protocol         Address
+ Name           MAC address              Protocol         Address
 -------------------------------------------------------------------------------
  vnet2          52:54:00:9d:41:3c        ipv4             192.168.30.10/0
 
@@ -191,34 +201,33 @@ $ ssh root@192.168.30.10
 
 ### Create the 3 empty master nodes
 
-These don’t include an OS
+These VMs don’t include an OS, it will be installed during the cluster deployment.
 
-First create the empty disks
+Create the empty disks
 ```
 # for x in master{1..3}; do echo $x; \
-   qemu-img create -f qcow2 /var/lib/libvirt/images/BIPI-${x}.qcow2 80G; \
+   qemu-img create -f qcow2 /var/lib/libvirt/images/bmipi-${x}.qcow2 80G; \
    done
 ```
 
 Update the SELinux file tags
 ```
-# restorecon -R -Fv /var/lib/libvirt/images/BIPI-master*
+# restorecon -R -Fv /var/lib/libvirt/images/bmipi-master*
 ```
 
 Change the owner and group to qemu:
 ```
 # for x in master{1..3}; do echo $x; chown qemu: \
-    /var/lib/libvirt/images/BIPI-${x}.qcow2; done
+    /var/lib/libvirt/images/bmipi-${x}.qcow2; done
 ```
 
 Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
-The AC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
+The MAC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 
 ```
 # for x in {1..3}; do echo $x; virt-install --name bmipi-master${x} --vcpus=4 \
-   --ram=16384 --disk \
-   path=/var/lib/libvirt/images/BIPI-master${x}.qcow2,bus=virtio,size=80 \
+   --ram=16384 --disk path=/var/lib/libvirt/images/bmipi-master${x}.qcow2,bus=virtio,size=80 \
    --os-variant rhel8.5 --network network=provision,mac=52:54:00:74:dc:a${x} \
    --network network=chucky,model=virtio,mac=52:54:00:a9:6d:7${x} \
    --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot \
@@ -232,26 +241,26 @@ These don’t include an OS
 First create the empty disks:
 ```
 # for x in worker{1..2}; do echo $x; \
-   qemu-img create -f qcow2 /var/lib/libvirt/images/BIPI-${x}.qcow2 80G; done
+   qemu-img create -f qcow2 /var/lib/libvirt/images/bmipi-${x}.qcow2 80G; done
 ```
 
 Update the SELinux file tags
 ```
-# restorecon -R -Fv /var/lib/libvirt/images/BIPI-worker*
+# restorecon -R -Fv /var/lib/libvirt/images/bmipi-worker*
 ```
 Change the owner and group to qemu:
 ```
 # for x in worker{1..2}; do echo $x; chown qemu: \
-   /var/lib/libvirt/images/BIPI-${x}.qcow2; done
+   /var/lib/libvirt/images/bmipi-${x}.qcow2; done
 ```
 
 Create the 2 worker nodes using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
-The AC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
+The MAC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 ```
 # for x in {1..2}; do echo $x; virt-install --name bmipi-worker${x} --vcpus=4 \
    --ram=16384 --disk \
-   path=/var/lib/libvirt/images/BIPI-worker${x}.qcow2,bus=virtio,size=80 \
+   path=/var/lib/libvirt/images/bmipi-worker${x}.qcow2,bus=virtio,size=80 \
    --os-variant rhel8.5 --network network=provision,mac=52:54:00:74:dc:d${x} \
    --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \
    --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot \
@@ -306,7 +315,7 @@ Can also be checked with:
         inet 192.168.30.1/24 brd 192.168.30.255 scope global virbr2
 ```
 
-Add the master and worker node VMs to virtual BC, use the IP obtained before to contact the vbmcd daemon and a unique port for each V, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
+Add the master and worker node VMs to virtual BC, use the IP obtained before to contact the vbmcd daemon and a unique port for each VM, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
 ```
 (virtualbmc) # for x in {1..3}; do vbmc add --username admin --password secreto \
                           --port 700${x} --address 192.168.30.1 bmipi-master${x}; done
@@ -351,7 +360,7 @@ The status in the vbmc list command changes to running.  This is not the VM runn
 +---------------+---------+--------------+------+
 ```
 
-Verify Power status of Vm's
+Verify Power status of VM's
 ```
 (virtualbmc) # for x in {1..3}; do ipmitool -I lanplus -U admin -P secreto \
                     -H 192.168.30.1 -p 700${x} power status; done
@@ -376,11 +385,11 @@ These rules are created in the physical host:
 ```
 ### Set up virtualization in the provisioning VM 
 
-Further details at [Set up nested virtualization in the provisioning V](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
+Further details at [Set up nested virtualization in the provisioning VM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
 
 The support VM with DHCP and DNS services must be already set up and running.
 
-If it is not already started, start the provision V
+If it is not already started, start the provision VM
 ```
 # virsh start provision 
 ```
@@ -423,9 +432,9 @@ provision # virt-host-validate
   QEU: Checking for secure guest support                                        : WARN (Unknown if this platform has Secure Guest support)
 ```
 
-### Verify DNS resolution in the provisioning V
+### Verify DNS resolution in the provisioning VM
 
-Test that the DNS names of all nodes can be resolved from the provisioning V
+Test that the DNS names of all nodes can be resolved from the provisioning VM
 ```
 [root@provision ~]# for x in {1..3}; do dig master${x}.ocp4.tale.net +short; done
 192.168.30.20
@@ -518,7 +527,7 @@ Even if a network connection is already active and working follow the next steps
 # virsh console provision
 # su - kni
 $ sudo nmcli con show
-NAE                                 UUID                                                                 TYPE              DEVICE
+NAME                                 UUID                                                                 TYPE              DEVICE
 Wired connection 2  1af5c70e-3d13-3ca7-92a9-e2582e653372  ethernet  eth1   
 virbr0                  b1ff2de8-0b3f-4d60-bb91-8b03078fc155               bridge            virbr0
 Wired connection 1  3defbd59-64c2-3806-947a-c1be05a4752e  ethernet  --
@@ -604,7 +613,7 @@ $ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd -
 
 ### Create the install-config.yaml file
 
-The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and AC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
+The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and MAC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
 
 Review the install-config.yaml file provided and add at the end of the file the pull secret downloaded in the previous section, and an the ssh key, the one created for the kni user earlier could be user for example.
 
@@ -675,12 +684,12 @@ Check if the bootstrap VM has been created and is running in the provisioning no
 
 If the bootstrap is running, ssh into it and check the logs there.
 
-To get the bootstrap VM IP run the following commands in the provisioning V:
+To get the bootstrap VM IP run the following commands in the provisioning VM:
 ```
 $ sudo virsh list
 $ sudo virsh domifaddr <bootstrap name> --source arp
 ```
-Connect to the bootstrap node using the core user, the ssh certificate that was used in the install-config.yaml file and the IP obtained in the previous step.  The connection can be initiated from the physical host or the provisioning V:
+Connect to the bootstrap node using the core user, the ssh certificate that was used in the install-config.yaml file and the IP obtained in the previous step.  The connection can be initiated from the physical host or the provisioning VM:
 ```
 # ssh -i .ssh/bmipi core@192.168.30.80
 ```
@@ -779,7 +788,7 @@ Create the VM instance based on the above image with the following commands:
 # xfs_growfs /dev/vda3
 ```
 
-Set up IP configuration.  Networking will be reconfigured during the setup of the V, but for now it requires the ability to install packages.
+Set up IP configuration.  Networking will be reconfigured during the setup of the VM, but for now it requires the ability to install packages.
 
 ```
 # nmcli con delete "Wired connection 1"
@@ -878,7 +887,7 @@ The region used is N. Virginia as this is the more affordable one I could find.
 
 In the AWS web site go to EC2 -> Instances -> Launch new instances.
 
-Select the AI “Red Hat Enterprise Linux 8 (HV), SSD Volume Type”, 64 bit (x86) architecture must be selected.
+Select the AI “Red Hat Enterprise Linux 8 (HVM), SSD Volume Type”, 64 bit (x86) architecture must be selected.
 
 In the Instance type page select c5n.metal (192GB RA, 72 vCPUs)
 
@@ -1018,7 +1027,7 @@ A physical host with libvirt/KVM virtual machines will be used in this demonstra
 
 Prepare the physical host as described in section [Setup the physical host in AWS](#setup-the-physical-host-in-aws)
 
-The default virtual network in libvirt can be used, but in this case a specific network is created for the OCP cluster.  Follow the instructions in section [Create the routable baremetal and provisioning networks in KV](#create-the-routable-baremetal-and-provisioning-networks-in-kvm), but only create the baremetal network.
+The default virtual network in libvirt can be used, but in this case a specific network is created for the OCP cluster.  Follow the instructions in section [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm), but only create the baremetal network.
 
 ### Install sushy-tools
 
@@ -1123,7 +1132,7 @@ $ sudo firewall-cmd --list-all --zone libvirt
 
 ### Setup DNS service
 
-A DNS server is required to resolve the names of the hosts in the cluster and some additional service names.  Follow the instructions in the section [Creating the support V](#creating-the-support-vm).
+A DNS server is required to resolve the names of the hosts in the cluster and some additional service names.  Follow the instructions in the section [Creating the support VM](#creating-the-support-vm).
 
 Alternatively the support VM can be imported following the instructions in section [Import the VM providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services).
 
@@ -1131,10 +1140,10 @@ The DHCP service is optional but recommended, it is used to provide network conf
 
 ### Create the provisioning V
 
-Create the provisioning VM following the instructions in section [Create the provisioning V](#create-the-provisioning-vm) , but in this case the command used to create the VM is slightly different: 
+Create the provisioning VM following the instructions in section [Create the provisioning VM](#create-the-provisioning-vm) , but in this case the command used to create the VM is slightly different: 
 
 * The reference to the provision network is removed since no such network is used
-* ake sure the AC address is unique and is the one used by the DHCP server for this VM in the support V
+* ake sure the MAC address is unique and is the one used by the DHCP server for this VM in the support V
 ```
 $ sudo virt-install --name=provision --vcpus=4 --ram=24096 \
   --disk path=/var/lib/libvirt/images/provision.qcow2,bus=virtio,size=120  \
@@ -1152,13 +1161,13 @@ Follow the instructions in sections [Create the 3 empty master nodes](#create-th
 The virt-install commands are slightly different from the ones in the sections above because they don't link the hosts to the provision network, which is not used in this case:
 ```
 # for x in {1..3}; do echo $x; virt-install --name bmipi-master${x} --vcpus=4  \ 
---ram=16384 --disk path=/var/lib/libvirt/images/BIPI-master${x}.qcow2,bus=virtio,size=40 \
+--ram=16384 --disk path=/var/lib/libvirt/images/bmipi-master${x}.qcow2,bus=virtio,size=40 \
 --os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:7${x} \
 --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot  --noautoconsole; done
 
 
 # for x in {1..2}; do echo $x; virt-install --name bmipi-worker${x} --vcpus=4 \
- --ram=16384 --disk path=/var/lib/libvirt/images/BIPI-worker${x}.qcow2,bus=virtio,size=40  \
+ --ram=16384 --disk path=/var/lib/libvirt/images/bmipi-worker${x}.qcow2,bus=virtio,size=40  \
 --os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \        --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot --noautoconsole; done
 ```
 
@@ -1201,7 +1210,7 @@ $ curl -k --user admin:password https://172.31.75.189:8080/redfish/v1/Systems/
 …
 ```
 
-The character string for every __@odata.id__ entry is the UUID of the libvirt V, and should match the output from the following command:
+The character string for every __@odata.id__ entry is the UUID of the libvirt VM, and should match the output from the following command:
 ```
 $ sudo virsh list --all --name --uuid
 44e3c29b-325e-4ad3-9859-c29233204a8a dhns                              
@@ -1216,14 +1225,14 @@ a95336a0-7213-4df4-a0cd-1796aba76ecb bmipi-master2
 ### Prepare the provision V
 
 Follow the instructions in sections:
-* [Set up virtualization in the provisioning V](#set-up-virtualization-in-the-provisioning-vm)
+* [Set up virtualization in the provisioning VM](#set-up-virtualization-in-the-provisioning-vm)
 * [Preparing the provisioning node for OpenShift Container Platform installation](#preparing-the-provisioning-node-for-openshift-container-platform-installation)
-* [Configure networking in the provisioning V](#configure-networking-in-the-provisioning-vm). Apply only the parts referring to the baremetal network.
+* [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm). Apply only the parts referring to the baremetal network.
 * [Get the pull secret, Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
  
 ### Create the install-config.yaml file
 
-Each host requires the V’s UUID and its AC address, use the following command to get that information:
+Each host requires the VM’s UUID and its MAC address, use the following command to get that information:
 
 ```
 $ for x in bmipi-master1 bmipi-master2 bmipi-master3 bmipi-worker1 bmipi-worker2; do echo -n "${x} "; sudo virsh domuuid $x|tr "\n" " "; sudo virsh domiflist $x| awk '/52:54/ {print $NF}'; done
@@ -1236,7 +1245,7 @@ bmipi-worker2: 639e3f63-72d8-4a48-9052-3c1175a7a4ea  52:54:00:a9:6d:92
 
 Adding the section rootDeviceHints is required, unlike when doing the installation using a provisioning network.
 
-Use the install-config.yaml file provided in this repository at redfish/install-config.yaml as a reference, keep in mind that cluster name, DNS domain, IPs, ports, ACs, etc. match other configurations options defined in other part of this document, and changing them will break the deployment process.
+Use the install-config.yaml file provided in this repository at redfish/install-config.yaml as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. match other configurations options defined in other part of this document, and changing them will break the deployment process.
 
 
 ### Install the Openshift cluster
