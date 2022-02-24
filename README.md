@@ -1,29 +1,30 @@
-﻿# Baremetal IPI Openshift 4 on libvirt KV
+﻿# Baremetal IPI Openshift 4 on libvirt KVM
 
 ## Table of contents
 
+* [Introduction](#introduction)
 * [Reference documentation](#reference-documentation)
-  * [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
-  * [Create the routable baremetal and provisioning networks in KV](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
-  * [Create the provisioning V](#create-the-provisioning-vm) 
+* [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
+  * [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
+  * [Create the provisioning VM](#create-the-provisioning-vm) 
   * [Create the 3 empty master nodes](#create-the-3-empty-master-nodes)
   * [Create two empty worker nodes](#create-two-empty-worker-nodes)
-  * [Install and set up vBC in the physical node](#install-and-set-up-vbmc-in-the-physical-node) 
-  * [Add firewall rules to allow the Vs to access the vbmcd service](#add-firewall-rules-to-allow-the-vms-to-access-the-vbmcd-service)
-  * [Set up virtualization in the provisioning V](#set-up-virtualization-in-the-provisioning-vm)
-  * [Verify DNS resolution in the provisioning V](#verify-dns-resolution-in-the-provisioning-vm) 
+  * [Install and set up vBMC in the physical node](#install-and-set-up-vbmc-in-the-physical-node) 
+  * [Add firewall rules to allow the VMs to access the vbmcd service](#add-firewall-rules-to-allow-the-vms-to-access-the-vbmcd-service)
+  * [Set up virtualization in the provisioning VM](#set-up-virtualization-in-the-provisioning-vm)
+  * [Verify DNS resolution in the provisioning VM](#verify-dns-resolution-in-the-provisioning-vm) 
   * [Preparing the provisioning node for OpenShift Container Platform installation](#preparing-the-provisioning-node-for-openshift-container-platform-installation)
-  * [Configure networking in the provisioning V](#configure-networking-in-the-provisioning-vm)
+  * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm)
   * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
   * [Install the Openshift cluster](#install-the-openshift-cluster) 
 * [Troubleshooting the installation](#troubleshooting-the-installation)
-  * [Connecting to the Vs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
-* [Creating the support V](#creating-the-support-vm)  
+  * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
+* [Creating the support VM](#creating-the-support-vm)  
   * [Set up DNS and DHCP](#set-up-dns-and-dhcp)
   * [Set up the DHCP server](#set-up-the-dhcp-server)
 * [Setup the physical host in AWS](#setup-the-physical-host-in-aws)
-  * [Import the V providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services)
+  * [Import the VM providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services)
 * [Redfish based architecture](#redfish-based-architecture)
   * [Prepare the physical host](#prepare-the-physical-host)
   * [Install sushy-tools](#install-sushy-tools)
@@ -31,12 +32,21 @@
   * [Start and test sushy tools](#start-and-test-sushy-tools) 
   * [Add firewall rules to allow access to sushy-tools](#add-firewall-rules-to-allow-access-to-sushy-tools) 
   * [Setup DNS service](#setup-dns-service) 
-  * [Create the provisioning V](#create-the-provisioning-vm)
-  * [Create the empty cluster hosts](#create-the-empty-cluster hosts) 
+  * [Create the provisioning VM](#create-the-provisioning-vm)
+  * [Create the empty cluster hosts](#create-the-empty-cluster-hosts) 
   * [Prepare the provision V](#prepare-the-provision-vm) 
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
   * [Install the Openshift-cluster](#install-the-openshift-cluster) 
 
+## Introduction
+
+This repository contains documentation on how to deploy an Openshift 4 cluster using the IPI method in a baremetal cluster on libvirt/KVM virtual machines.
+
+The instruction given here are meant to deploy a test cluster and help understand the process of deploying a baremetal IPI Openshift 4 cluster at a reduced cost, compared to deploying the same cluster using real baremetal servers.
+
+Even in the scenario depicted here a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
+
+The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design) and [Redfish based architecture](#redfish-based-architecture) respectively 
 
 ## Reference documentation
 
@@ -46,12 +56,12 @@ The official documentation explains in detail how to install an Openshift 4 clus
 ## Provisioning Network Based Architecture Design
 
 The architecture design for this cluster is as follows:
-* Uses KV based virtual machines.
+* Uses libvirt/KVM based virtual machines.
 * Uses both a bare metal network and a provisioning network.
 
 ![Provisioning network base architecture](images/arch1.png)
   
-The physical server (AKA hypervisor) where the KV Vs are created must support nested virtualization and have it enabled: [Using nested virtualization in KV](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/)
+The physical server (AKA hypervisor) where the KVM VMs are created must support nested virtualization and have it enabled: [Using nested virtualization in KVM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/)
 
 Check if nested virtualization is supported, a value of 1 means that it is supported and enabled.
 ```
@@ -61,7 +71,7 @@ Check if nested virtualization is supported, a value of 1 means that it is suppo
 
 Enable nested virtualization if it is not, this is a one time configuration [Enabling nested virtualization in KV](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#_enabling_nested_virtualization): 
 
-* Shut down all running KV Vs
+* Shut down all running KVM VMs
 ```
 # virsh list
 # virsh shutdown <vm name>
@@ -116,7 +126,7 @@ Check the network configuration in the host, new bridges should appear
 
 ### Create the provisioning V
 
-Get the qcow2 image for RHEL 8 from access.redhat.com -> Downloads -> Red Hat Enterprise Linux 8 -> Red Hat Enterprise Linux 8.5 KV Guest Image
+Get the qcow2 image for RHEL 8 from access.redhat.com -> Downloads -> Red Hat Enterprise Linux 8 -> Red Hat Enterprise Linux 8.5 KVM Guest Image
 
 Copy the qcow2 image file to the libvirt images directory 
 ```
@@ -200,7 +210,7 @@ Change the owner and group to qemu:
     /var/lib/libvirt/images/BIPI-${x}.qcow2; done
 ```
 
-Create the 3 master Vs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the V cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
+Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the V cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
 
 The AC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 
@@ -247,7 +257,7 @@ The AC addresses for the routable and provisioning network NICs are specified so
    --noautoconsole; done
 ```
 
-Check that all Vs are created:
+Check that all VMs are created:
 ```
 # virsh list –all
 ```
@@ -295,7 +305,7 @@ Can also be checked with:
         inet 192.168.30.1/24 brd 192.168.30.255 scope global virbr2
 ```
 
-Add the master and worker node Vs to virtual BC, use the IP obtained before to contact the vbmcd daemon and a unique port for each V, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
+Add the master and worker node VMs to virtual BC, use the IP obtained before to contact the vbmcd daemon and a unique port for each V, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
 ```
 (virtualbmc) # for x in {1..3}; do vbmc add --username admin --password secreto \
                           --port 700${x} --address 192.168.30.1 bmipi-master${x}; done
@@ -304,7 +314,7 @@ Add the master and worker node Vs to virtual BC, use the IP obtained before to c
                           --port 701${x} --address 192.168.30.1 bmipi-worker${x}; done
 ```
 
-Check that the Vs are accepted:
+Check that the VMs are accepted:
 ```
 (virtualbmc) # vbmc list
 +---------------+--------+--------------+------+
@@ -354,7 +364,7 @@ Chassis Power is off
 Chassis Power is off
 ```
 
-### Add firewall rules to allow the Vs to access the vbmcd service. 
+### Add firewall rules to allow the VMs to access the vbmcd service. 
 
 These rules are created in the physical host:
 ```
@@ -712,7 +722,7 @@ The baremetal hosts configuration can be retrieved with the following command:
 $ oc -n openshift-machine-api get bmh
 ```
 
-### Connecting to the Vs with virt-manager
+### Connecting to the VMs with virt-manager
 
 This instructions can be directly applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
 
@@ -861,7 +871,7 @@ After any modification to the configuration file restart the dhcpd daemon and ch
 
 ## Setup the physical host in AWS
 
-This section describes how to set up a bare metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KV virtual machines will run.
+This section describes how to set up a bare metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KVM virtual machines will run.
 
 The region used is N. Virginia as this is the more affordable one I could find.
 
@@ -894,7 +904,7 @@ Subscribe the host to Red Hat
 $ sudo subscription-manager register –username <username>
 ```
 
-Install the virtualization host group to support KV virtual machines:
+Install the virtualization host group to support KVM virtual machines:
 ```
 $ sudo dnf group install virtualization-host-environment
 ```
@@ -955,7 +965,7 @@ $ sudo chmod 0751 /var/lib/libvirt/images/
 ```
 $ sudo restorecon -R -Fv /var/lib/libvirt/images/ 
 ```
-Create an storage pool for KV Vs:
+Create an storage pool for KVM VMs:
 ```
 $  sudo virsh pool-define-as default dir --target /var/lib/libvirt/images/
 $  sudo virsh pool-build default
@@ -1003,7 +1013,7 @@ The following links provide additional information about sushy-tools:
 
 ### Prepare the physical host
 
-A physical host with libvirt/KV virtual machines will be used in this demonstration.
+A physical host with libvirt/KVM virtual machines will be used in this demonstration.
 
 Prepare the physical host as described in section [Setup the physical host in AWS](#setup-the-physical-host-in-aws)
 
@@ -1103,7 +1113,7 @@ $ curl -k --user admin:password  https://172.31.75.189:8080/redfish/v1/Systems/
 
 ### Add firewall rules to allow access to sushy-tools
 
-In order for the bootstrap V to be able to control the cluster Vs via redfish protocol a firewall rule allowing access to the port where the susy-tools server is listening needs to be added to the physical host: 
+In order for the bootstrap V to be able to control the cluster VMs via redfish protocol a firewall rule allowing access to the port where the susy-tools server is listening needs to be added to the physical host: 
 ```
 $ sudo firewall-cmd --add-port 8080/tcp --zone=libvirt --permanent
 $ sudo firewall-cmd --reload
@@ -1151,7 +1161,7 @@ The virt-install commands are slightly different from the ones in the sections a
 --os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \        --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot --noautoconsole; done
 ```
 
-Check that the Vs are detected by susy-tools:
+Check that the VMs are detected by susy-tools:
 ```
 $ curl -k --user admin:password https://172.31.75.189:8080/redfish/v1/Systems/
 {
