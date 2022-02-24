@@ -179,7 +179,7 @@ Complete the resizing from inside the VM
 ```
 
 Connect to the provision VM.  There are two alternatives:
-* Through the virtual console (To leave console mode use CTRL+] )
+* Through the virtual console (to leave the console use CTRL+] )
 ```
 # virsh console provision
 ```
@@ -272,28 +272,26 @@ Check that all VMs are created:
 # virsh list –all
 ```
 
-### Install and set up vBC in the physical node
-
+### Install and set up vBMC in the physical node
 
 Install the following packages in the physical server
 
 ```
 # dnf install gcc libvirt-devel python3-virtualenv ipmitool
 ```
-Create a python virtual environment to install vBC
+Create a python virtual environment to install vBMC
 ```
 # virtualenv-3 virtualbmc
 
 # . virtualbmc/bin/activate
 ```
 
-Install virtual BC in the python virtual environment:
+Install virtual BMC in the python virtual environment:
 ```
 (virtualbmc) # pip install virtualbmc
 ```
 
 Start the vbmcd daemon in the python virtual environment:
-
 ```
 (virtualbmc) # ./virtualbmc/bin/vbmcd
 ```
@@ -315,7 +313,7 @@ Can also be checked with:
         inet 192.168.30.1/24 brd 192.168.30.255 scope global virbr2
 ```
 
-Add the master and worker node VMs to virtual BC, use the IP obtained before to contact the vbmcd daemon and a unique port for each VM, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of virsh list –all command:
+Add the master and worker node VMs to virtual BMC, use the IP obtained before to contact the vbmcd daemon and a unique port for each VM, the ports are arbitrary but should be above 1024.  The name of the node is the one shown in the output of `virsh list –all` command.  A username and password is associated to each node that must be used later to control the VMs; in this case all nodes use the same username/password combination.  Keep in mind that the ipmi protocol used by BMC is not encrypted or secured in any way:
 ```
 (virtualbmc) # for x in {1..3}; do vbmc add --username admin --password secreto \
                           --port 700${x} --address 192.168.30.1 bmipi-master${x}; done
@@ -328,7 +326,7 @@ Check that the VMs are accepted:
 ```
 (virtualbmc) # vbmc list
 +---------------+--------+--------------+------+
-| Domain name   | Status | Address          | Port |
+| Domain name   | Status | Address      | Port |
 +---------------+--------+--------------+------+
 | bmipi-master1 | down   | 192.168.30.1 | 7001 |
 | bmipi-master2 | down   | 192.168.30.1 | 7002 |
@@ -338,19 +336,18 @@ Check that the VMs are accepted:
 +---------------+--------+--------------+------+
 ```
 
-Start a virtual BC service for every virtual machine instance:
+Start a virtual BMC service for every virtual machine instance:
 ```
 (virtualbmc) # for x in {1..3}; do vbmc start bmipi-master${x}; done
-
 
 (virtualbmc) # for x in {1..2}; do vbmc start bmipi-worker${x}; done
 ```
 
-The status in the vbmc list command changes to running.  This is not the VM running but the BC service for that V
+The status in the vbmc list command changes to running.  This is not the VM running but the BMC service for that VM
 ```
 (virtualbmc) # vbmc list
 +---------------+---------+--------------+------+
-| Domain name   | Status  | Address          | Port |
+| Domain name   | Status  | Address      | Port |
 +---------------+---------+--------------+------+
 | bmipi-master1 | running | 192.168.30.1 | 7001 |
 | bmipi-master2 | running | 192.168.30.1 | 7002 |
@@ -360,7 +357,7 @@ The status in the vbmc list command changes to running.  This is not the VM runn
 +---------------+---------+--------------+------+
 ```
 
-Verify Power status of VM's
+Verify Power status of VM's.  These commands use the user/password and IP/port defined before for each node:
 ```
 (virtualbmc) # for x in {1..3}; do ipmitool -I lanplus -U admin -P secreto \
                     -H 192.168.30.1 -p 700${x} power status; done
@@ -387,7 +384,7 @@ These rules are created in the physical host:
 
 Further details at [Set up nested virtualization in the provisioning VM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/#proc_configuring-nested-virtualization-in-virt-manager)
 
-The support VM with DHCP and DNS services must be already set up and running.
+The support VM with DHCP and DNS services must be already setup and running.
 
 If it is not already started, start the provision VM
 ```
@@ -428,7 +425,7 @@ provision # virt-host-validate
   QEU: Checking for cgroup 'memory' controller support                          : PASS
   QEU: Checking for cgroup 'devices' controller support                         : PASS
   QEU: Checking for cgroup 'blkio' controller support                           : PASS
-  QEU: Checking for device assignment IOU support                             : WARN (No ACPI DAR table found, IOU either disabled in BIOS or not supported by this hardware platform)
+  QEU: Checking for device assignment IOU support                               : WARN (No ACPI DAR table found, IOU either disabled in BIOS or not supported by this hardware platform)
   QEU: Checking for secure guest support                                        : WARN (Unknown if this platform has Secure Guest support)
 ```
 
