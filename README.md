@@ -38,6 +38,9 @@
   * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
   * [Install the Openshift-cluster](#install-the-openshift-cluster) 
+* [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
+  * [Reference documentation](#reference-documentation)
+  * [Install and set up NGINX](#install-and-set-up-nginx)
 
 ## Introduction
 
@@ -1284,4 +1287,140 @@ The error about missing volume vda is normal, nothing to worry about.
 Run the installation from the provisioning host:
 ```
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
+```
+
+## External access to Openshift using NGINX
+
+### Reference documentation:
+[ngx_http_proxy module](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+[Regular expresions in NGINX](https://www.nginx.com/blog/regular-expression-tester-nginx/)
+[NGINX Maps](https://johnhpatton.medium.com/nginx-map-comparison-regular-express-229120debe46)
+[NGINX Reverse Proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
+[ngx_http_sub module](http://nginx.org/en/docs/http/ngx_http_sub_module.html)
+
+
+The baremetal IPI OCP cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
+
+One possible solution to provide access to the cluster from the Internet is to install and configure a reverse proxy in the physical host and use it to rely requests to the OCP custer.
+
+In this documentation a reverse proxy based on NGINX is used.
+
+The reverse proxy contains different configuration sections for accessing the API, the secure application routes based on port 443 and the insecure application routes based on port 80.
+
+The DNS names used to access the applications and API endpoint can be different from the internal names.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable on the Internet (tale.net in the example), the reverse proxy can do the translation between the external and the internal zones.
+
+The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The URLs can be changed from the default values but these services can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+
+In this documentation a local DNS server based on dnsmasq is used to access the console and oauth services using their internal DNS names, but adding the names to the locahost file should also work.
+
+### Install and set up NGINX
+Install NGINX packages
+```
+$ sudo dnf install nginx
+```
+
+Enable and start NGINX service
+```
+$ sudo systemctl enable nginx --now
+```
+
+The public DNS zone used in this example to access the Openshift cluster is _ocp4.redhat.com_
+
+Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the hypervisor.  Do this in the public DNS resolver hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
+
+Use the IPs defined in the internal DNS server:
+```
+$ host api.ocp4.redhat.com
+api.ocp4.redhat.com has address 34.219.150.17
+
+$ host *.apps.ocp4.redhat.com 
+*.apps.ocp4.redhat.com has address 34.219.150.17
+```
+
+Create a file in NGINX defining the reverse proxy configuration to access the Openshift cluster and place it in /etc/nginx/conf.d/.  An example file is provided in this repository at nginx/ocp4.conf:
+
+Copy the file to /etc/nginx/conf.d/
+```
+$ sudo cp ocp4.conf /etc/nginx/conf.d/
+```
+The NGINX configuration file contains the definition of a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__ however the certificate used is obtained from the Openshift cluster default ingress controller: 
+
+Extracted the cerfiticate from the OCP 4 cluster, the following command will create two files:
+```
+$ oc extract secret/router-certs-default -n openshift-ingress
+tls.crt
+tls.key
+```
+Place the files in the path specified in the configuration:
+```
+  ssl_certificate "/etc/pki/nginx/ocp-apps.crt";
+  ssl_certificate_key "/etc/pki/nginx/private/ocp-apps.key";
+```
+Create the directories if they don't exist, and copy the files
+```
+$ sudo mkdir /etc/pki/nginx/
+$ sudo cp tls.crt /etc/pki/nginx/ocp-apps.crt
+$ sudo mkdir /etc/pki/nginx/private/
+$ sudo cp tls.key /etc/pki/nginx/private/ocp-apps.key
+$ sudo ls -l /etc/pki/nginx/
+```
+Restore the SELinux file labels:
+```
+$ sudo restorecon -R -Fv /etc/pki/nginx/ocp-apps.crt
+Relabeled /etc/pki/nginx/ocp-apps.crt from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
+
+$ sudo restorecon -R -Fv /etc/pki/nginx/private/ocp-apps.key
+Relabeled /etc/pki/nginx/private/ocp-apps.key from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
+```
+Update the configuration file and use the correct IP for the Openshift cluster 
+
+Review the configuration file and update the IP associated with the **proxy_pass** directive, use the IP for the internal default ingress controller
+```
+$ dig +short *.apps.ocp4.tale.net
+192.168.30.110
+
+...
+    proxy_pass https://192.168.30.110;
+...
+```
+Update the configuration file and use the correct external and internal DNS domains in every virtual server definition:
+```
+...
+  server_name *.apps.ocp4.redhat.com;
+...
+    proxy_set_header Host $host_head.apps.ocp4.redhat.com;
+...
+    proxy_ssl_name $host_head.apps.ocp4.tale.net;
+...
+```
+
+Verify that the configuration is correct:
+```
+$ sudo nginx -t
+```
+
+Reload the nginx configuration
+```
+$ sudo systemctl reload nginx
+$ sudo systemctl status nginx
+```
+
+Enable https access through the firewall in the physical host
+```
+$ sudo firewall-cmd --add-service https --zone public --permanent
+$ sudo firewall-cmd --reload
+$ sudo firewall-cmd --list-all --zone public
+```
+In case of using an AWS EC2 instance, add the 443 port to the security group in the AWS EC2 instance.
+
+If the physical host uses SELinux, it is possible that the nginx service is not allowed to open outgoing network connections, a message like the following will appear in the audit log
+```
+type=AVC msg=audit(1646133037.928:6189): avc:  denied  { name_connect } for  pid=420527 comm="nginx" dest=443 scontext=system_u:system_r:httpd_t:s 0 tcontext=system_u:object_r:http_port_t:s0 tclass=tcp_socket permissive=0
+```
+In that case the following SELinux boolean needs to be enable to allow nginx user to stablish outbound network connections:
+```
+$ sudo setsebool httpd_can_network_connect on                                                                        
+
+$ sudo getsebool httpd_can_network_connect
+httpd_can_network_connect --> on
 ```
