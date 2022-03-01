@@ -1291,14 +1291,6 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## External access to Openshift using NGINX
 
-### Reference documentation:
-[ngx_http_proxy module](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
-[Regular expresions in NGINX](https://www.nginx.com/blog/regular-expression-tester-nginx/)
-[NGINX Maps](https://johnhpatton.medium.com/nginx-map-comparison-regular-express-229120debe46)
-[NGINX Reverse Proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
-[ngx_http_sub module](http://nginx.org/en/docs/http/ngx_http_sub_module.html)
-
-
 The baremetal IPI OCP cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
 
 One possible solution to provide access to the cluster from the Internet is to install and configure a reverse proxy in the physical host and use it to rely requests to the OCP custer.
@@ -1312,6 +1304,13 @@ The DNS names used to access the applications and API endpoint can be different 
 The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The URLs can be changed from the default values but these services can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
 In this documentation a local DNS server based on dnsmasq is used to access the console and oauth services using their internal DNS names, but adding the names to the locahost file should also work.
+
+### Reference documentation
+* [ngx_http_proxy module](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+* [Regular expresions in NGINX](https://www.nginx.com/blog/regular-expression-tester-nginx/)
+* [NGINX Maps](https://johnhpatton.medium.com/nginx-map-comparison-regular-express-229120debe46)
+* [NGINX Reverse Proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
+* [ngx_http_sub module](http://nginx.org/en/docs/http/ngx_http_sub_module.html)
 
 ### Install and set up NGINX
 Install NGINX packages
