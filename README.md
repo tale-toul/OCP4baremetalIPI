@@ -298,7 +298,7 @@ Install virtual BMC in the python virtual environment:
 (virtualbmc) # pip install virtualbmc
 ```
 
-Start the vbmcd daemon in the python virtual environment:
+Start the vbmcd daemon in the python virtual environment.  In the Openshift cluster is rebooted after installation, this service must be started before starting the cluster nodes:
 ```
 (virtualbmc) # ./virtualbmc/bin/vbmcd
 ```
@@ -1291,9 +1291,9 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## External access to Openshift using NGINX
 
-The baremetal IPI OCP cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API endpoint and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
 
-One possible solution to provide access to the cluster from the Internet is to install and configure a reverse proxy in the physical host and use it to rely requests to the OCP custer.
+One possible solution to provide access to the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the OCP custer.
 
 In this documentation a reverse proxy based on NGINX is used.
 
@@ -1313,6 +1313,8 @@ In this documentation a local DNS server based on dnsmasq is used to access the 
 * [ngx_http_sub module](http://nginx.org/en/docs/http/ngx_http_sub_module.html)
 
 ### Install and set up NGINX
+The following steps must be run in the physical host which is the one hosting the reverse proxy.
+
 Install NGINX packages
 ```
 $ sudo dnf install nginx
@@ -1321,13 +1323,12 @@ $ sudo dnf install nginx
 Enable and start NGINX service
 ```
 $ sudo systemctl enable nginx --now
+$ sudo systemctl status nginx
 ```
+Create DNS entries for the API endpoint and the default ingress controller.  The public DNS zone used in this example to access the Openshift cluster is _ocp4.redhat.com_
 
-The public DNS zone used in this example to access the Openshift cluster is _ocp4.redhat.com_
+Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the physical host.  Do this in the public DNS resolver hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
 
-Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the hypervisor.  Do this in the public DNS resolver hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
-
-Use the IPs defined in the internal DNS server:
 ```
 $ host api.ocp4.redhat.com
 api.ocp4.redhat.com has address 34.219.150.17
@@ -1336,13 +1337,13 @@ $ host *.apps.ocp4.redhat.com
 *.apps.ocp4.redhat.com has address 34.219.150.17
 ```
 
-Create a file in NGINX defining the reverse proxy configuration to access the Openshift cluster and place it in /etc/nginx/conf.d/.  An example file is provided in this repository at nginx/ocp4.conf:
+Create a file in NGINX defining the reverse proxy configuration to access the Openshift cluster and place it in **/etc/nginx/conf.d/**.  An example file is provided in this repository at nginx/ocp4.conf:
 
 Copy the file to /etc/nginx/conf.d/
 ```
 $ sudo cp ocp4.conf /etc/nginx/conf.d/
 ```
-The NGINX configuration file contains the definition of a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__ however the certificate used is obtained from the Openshift cluster default ingress controller: 
+The NGINX configuration file contains the definition for a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__ however the certificate used in this example is obtained from the Openshift cluster default ingress controller: 
 
 Extracted the cerfiticate from the OCP 4 cluster, the following command will create two files:
 ```
@@ -1350,7 +1351,7 @@ $ oc extract secret/router-certs-default -n openshift-ingress
 tls.crt
 tls.key
 ```
-Place the files in the path specified in the configuration:
+Copy the certificate files to the path specified in the NGINX virtual server configuration:
 ```
   ssl_certificate "/etc/pki/nginx/ocp-apps.crt";
   ssl_certificate_key "/etc/pki/nginx/private/ocp-apps.key";
@@ -1365,29 +1366,28 @@ $ sudo ls -l /etc/pki/nginx/
 ```
 Restore the SELinux file labels:
 ```
-$ sudo restorecon -R -Fv /etc/pki/nginx/ocp-apps.crt
+$ sudo restorecon -R -Fv /etc/pki/nginx
+Relabeled /etc/pki/nginx from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 Relabeled /etc/pki/nginx/ocp-apps.crt from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
-
-$ sudo restorecon -R -Fv /etc/pki/nginx/private/ocp-apps.key
+Relabeled /etc/pki/nginx/private from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 Relabeled /etc/pki/nginx/private/ocp-apps.key from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 ```
-Update the configuration file and use the correct IP for the Openshift cluster 
 
-Review the configuration file and update the IP associated with the **proxy_pass** directive, use the IP for the internal default ingress controller
+Review the configuration file and update the IP associated with the **proxy_pass** directive, use the IP for the internal default ingress controller.  Run the next command in the provisioning host
 ```
-$ dig +short *.apps.ocp4.tale.net
+provision $ dig +short \*.apps.ocp4.tale.net
 192.168.30.110
 
 ...
     proxy_pass https://192.168.30.110;
 ...
 ```
-Update the configuration file and use the correct external and internal DNS domains in every virtual server definition:
+Update the NGINX configuration file and use the correct external and internal DNS domains in every virtual server definition:
 ```
 ...
-  server_name *.apps.ocp4.redhat.com;
+  server_name \*.apps.ocp4.redhat.com;
 ...
-    proxy_set_header Host $host_head.apps.ocp4.redhat.com;
+    proxy_set_header Host $host_head.apps.ocp4.tale.net;
 ...
     proxy_ssl_name $host_head.apps.ocp4.tale.net;
 ...
@@ -1418,8 +1418,13 @@ type=AVC msg=audit(1646133037.928:6189): avc:  denied  { name_connect } for  pid
 ```
 In that case the following SELinux boolean needs to be enable to allow nginx user to stablish outbound network connections:
 ```
-$ sudo setsebool httpd_can_network_connect on                                                                        
+$ sudo setsebool httpd_can_network_connect on
 
 $ sudo getsebool httpd_can_network_connect
 httpd_can_network_connect --> on
 ```
+
+
+@#TODO#@
+Add a virtual server in nginx configuration to provide access to the API endpoint
+Add a virtual server in nginx configuration to provide access to non secure application routes
