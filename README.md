@@ -41,6 +41,9 @@
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Reference documentation](#reference-documentation)
   * [Install and set up NGINX](#install-and-set-up-nginx)
+* [Enable Internal Image Registry](#enable-internal-image-registry)
+  * [Add Storage to the Worker Nodes](#add-storage-to-the-worker-nodes)
+  * [Make the internal image registry operational](#make-the-internal-image-registry-operational)
 
 ## Introduction
 
@@ -1404,27 +1407,178 @@ $ sudo systemctl reload nginx
 $ sudo systemctl status nginx
 ```
 
-Enable https access through the firewall in the physical host
+Enable http and https access through the firewall in the physical host
 ```
-$ sudo firewall-cmd --add-service https --zone public --permanent
+$ sudo firewall-cmd --add-service https --add-service http --zone public --permanent
 $ sudo firewall-cmd --reload
 $ sudo firewall-cmd --list-all --zone public
 ```
 In case of using an AWS EC2 instance, add the 443 port to the security group in the AWS EC2 instance.
 
-If the physical host uses SELinux, it is possible that the nginx service is not allowed to open outgoing network connections, a message like the following will appear in the audit log
+If the physical host uses SELinux, it is possible that the nginx service is not allowed to open outgoing network connections, a message like the following will appear in the physical host's audit log
 ```
 type=AVC msg=audit(1646133037.928:6189): avc:  denied  { name_connect } for  pid=420527 comm="nginx" dest=443 scontext=system_u:system_r:httpd_t:s 0 tcontext=system_u:object_r:http_port_t:s0 tclass=tcp_socket permissive=0
 ```
-In that case the following SELinux boolean needs to be enable to allow nginx user to stablish outbound network connections:
+In that case the following SELinux boolean needs to be enable to allow nginx user to stablish outbound network connections. The **-P** option is used to make the change persistent across reboots:
 ```
-$ sudo setsebool httpd_can_network_connect on
+$ sudo setsebool -P httpd_can_network_connect on
 
 $ sudo getsebool httpd_can_network_connect
 httpd_can_network_connect --> on
 ```
 
+## Enable Internal Image Registry
+In the case of a berametal IPI Openshift cluster, the internal image registry is not available after installation, this can be verified by checking the value of managementState in the registry configuration, if the value is __Removed__ the registry is not available:
+
+```
+oc get configs.imageregistry/cluster -o yaml
+...
+spec:
+  logLevel: Normal
+  managementState: Removed
+...
+```
+The reason is that no storage for the image registry has been configured.  Follow the instruction in the official documentation [Configuring the registry for bare metal ](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html) to setup the image registry.
+
+In this example the storage will be provided by additional volumes added to the worker KVM VMs
+
+### Add Storage to the Worker Nodes
+An additional storage volume is created for each of the worker nodes.  The following commands are run in the physical host.
+```
+ # for x in {1..2}; do virsh vol-create-as default worker${x}-vol2.qcow2 5G --format qcow2; done
+ # virsh vol-list --pool default
+```
+
+Attach the volumes created above to the worker VMs:
+```
+# for x in {1..2}; do virsh attach-disk bmipi-worker${x} /var/lib/libvirt/images/worker${x}-vol2.qcow2 vdb --driver qemu --subdriver qcow2 --live --config; done
+Disk attached successfully
+
+Disk attached successfully
+```
+
+Verify that the disks are correctly attached as the vdb device:
+```
+# for x in {1..2}; do echo WORKER${x}; virsh dumpxml bmipi-worker${x}|grep -A4 '<disk'; done
+WORKER1
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/libvirt/images/BMIPI-worker1.qcow2' index='1'/>
+      <backingStore/>
+      <target dev='vda' bus='virtio'/>
+--
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/libvirt/images/worker1-vol2.qcow2' index='2'/>
+      <backingStore/>
+      <target dev='vdb' bus='virtio'/>
+WORKER2
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/libvirt/images/BMIPI-worker2.qcow2' index='1'/>
+      <backingStore/>
+      <target dev='vda' bus='virtio'/>
+--
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/var/lib/libvirt/images/worker2-vol2.qcow2' index='2'/>
+      <backingStore/>
+      <target dev='vdb' bus='virtio'/>
+
+ # ssh -i .ssh/bmipi core@192.168.30.30 lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+vda    252:0    0   40G  0 disk 
+├─vda1 252:1    0    1M  0 part 
+├─vda2 252:2    0  127M  0 part 
+├─vda3 252:3    0  384M  0 part /boot
+├─vda4 252:4    0 39.4G  0 part /sysroot
+└─vda5 252:5    0   65M  0 part 
+vdb    252:16   0    5G  0 disk 
+
+ # ssh -i .ssh/bmipi core@192.168.30.31 lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+vda    252:0    0   40G  0 disk 
+├─vda1 252:1    0    1M  0 part 
+├─vda2 252:2    0  127M  0 part 
+├─vda3 252:3    0  384M  0 part /boot
+├─vda4 252:4    0 39.4G  0 part /sysroot
+└─vda5 252:5    0   65M  0 part 
+vdb    252:16   0    5G  0 disk
+```
+The new disks will be added as PVs using the [Local Storage Operator](https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html) follow the instructions in the offcial documentation to install and setup the Operator(https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html)
+
+An example definition for the local volume can be found in the file **storage/localVolume-vol2.yaml**
+
+Verify that the local volume and PVs were created
+```
+$ oc get localvolume -n openshift-local-storage
+NAME   AGE
+vol2   4m59s
+
+$ oc get pv
+NAME                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
+local-pv-10328d04   5Gi        RWO            Delete           Available           registorage             5m31s
+local-pv-9fa5f293   5Gi        RWO            Delete           Available           registorage             5m34s
+```
+### Make the internal image registry operational
+
+Once there are Persistent Volumes (PVs) available to be used by the internal image registry, assign one of them to the registry.
+
+The official documentation instructions will not work in this particular case because of the storage used here: RWX vs RWO, and non default storage class.  [Configuring the registry for bare metal](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html)
+
+The basic steps to make the registry operational are:
+
+* Change the management state to __Managed__
+* Add a storage claim
+
+Both of these configuration changes are applied to the object __configs.imageregistry/cluster__.
+
+The storage provided by the local volume operator is of type ReadWriteOnce (RWO) so only one instance of the image registry pod will run, making the servie not highly available.
+
+Create a PVC that will bind to one of the PVs provided by the local storage operator, this PVC will later be assigned to the registry.  A file definition example can be found in at **storage/image-registry-storage-PVC.yaml**.  Make sure that the size specified in the PVC, the access mode and the storage class name match those of the PV:
+```
+$ oc get pv
+NAME                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                                             STORAGECLASS   REASON   AGE
+local-pv-9fa5f293   5Gi        RWO            Delete           Available                                                     registorage             16h
+
+
+spec:
+  storageClassName: "registorage"
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+Create the PVC and verify that it has bound to one PV
+```
+$ oc create -f image-registry-storage-PVC.yaml
+
+$ oc get pvc
+NAME                     STATUS   VOLUME              CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+image-registry-storage   Bound    local-pv-10328d04   5Gi        RWO            registorage    15h
+```
+To associate the storage with the image registry and set the management status as managed, edit the configuration object and add the following code.  Make sure that the name of the claim matches the name of the PVC created earlier:
+```
+$ oc edit configs.imageregistry/cluster
+spec:
+  managementState: Managed
+  storage:
+    pvc:
+      claim: image-registry-storage
+...
+```
+After saving the changes, verify that a new image-registry pod is created in the namespace openshift-image-registry
+```
+$ oc get pods -n openshift-image-registry
+NAME                                               READY   STATUS    RESTARTS      AGE
+cluster-image-registry-operator-859997cd74-4cpc6   1/1     Running   9 (46m ago)   21d
+image-registry-547586978b-2s9vb                    1/1     Running   1             16h
+...
+```
+The internal image registry is ready for use.
 
 @#TODO#@
-Add a virtual server in nginx configuration to provide access to the API endpoint
-Add a virtual server in nginx configuration to provide access to non secure application routes
+
+* Add a virtual server in nginx configuration to provide access to the API endpoint
+* Add a virtual server in nginx configuration to provide access to non secure application routes
