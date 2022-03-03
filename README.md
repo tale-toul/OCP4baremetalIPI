@@ -1307,6 +1307,8 @@ The one caveat about DNS zones translation is that the web console (https://cons
 
 A local DNS server based on dnsmasq could be used to resolve the console and oauth internal DNS names, but adding the names to the locahost file should also work.
 
+Additional details about the NGINX configuration can be found in the [nginx directory](nginx/REAME.md)
+
 ### Install and set up NGINX
 The following steps must be run in the physical host which is the one hosting the reverse proxy.
 
