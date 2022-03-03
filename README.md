@@ -1296,17 +1296,17 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API endpoint and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
 
-One possible solution to provide access to the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the OCP custer.
+One possible solution to provide access to the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the OCP cluster.
 
 In this documentation a reverse proxy based on NGINX is used.
 
-The reverse proxy contains different configuration sections for accessing the API, the secure application routes based on port 443 and the insecure application routes based on port 80.
+The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes through port 443 and insecure application routes through on port 80.
 
-The DNS names used to access the applications and API endpoint can be different from the internal names.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable on the Internet (tale.net in the example), the reverse proxy can do the translation between the external and the internal zones.
+The external DNS names used to access the applications and API endpoint can be different from the internal used by Openshift names.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host (tale.net in this example), the reverse proxy can do the translation between the external and the internal zones.
 
-The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The URLs can be changed from the default values but these services can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The console and oauth URLs can be changed from their default values but these services can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
-In this documentation a local DNS server based on dnsmasq is used to access the console and oauth services using their internal DNS names, but adding the names to the locahost file should also work.
+A local DNS server based on dnsmasq could be used to resolve the console and oauth internal DNS names, but adding the names to the locahost file should also work.
 
 ### Reference documentation
 * [ngx_http_proxy module](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
@@ -1367,6 +1367,19 @@ $ sudo mkdir /etc/pki/nginx/private/
 $ sudo cp tls.key /etc/pki/nginx/private/ocp-apps.key
 $ sudo ls -l /etc/pki/nginx/
 ```
+A similar procedure to the one described above is used to collect the API endpoint x509 certificate, the __--confirm__ option is used to overwrite any existing file with the same name.
+```
+$ oc extract secret/external-loadbalancer-serving-certkey -n openshift-kube-apiserver --confirm
+```
+Copy the certificate files to the path specified in the NGINX virtual server configuration:
+```
+  ssl_certificate "/etc/pki/nginx/ocp-api.crt";
+  ssl_certificate_key "/etc/pki/nginx/private/ocp-api.key";
+
+$ sudo cp tls.crt /etc/pki/nginx/ocp-api.crt
+$ sudo cp tls.key /etc/pki/nginx/private/ocp-api.key
+$ sudo ls -l /etc/pki/nginx/
+```
 Restore the SELinux file labels:
 ```
 $ sudo restorecon -R -Fv /etc/pki/nginx
@@ -1374,18 +1387,24 @@ Relabeled /etc/pki/nginx from unconfined_u:object_r:cert_t:s0 to system_u:object
 Relabeled /etc/pki/nginx/ocp-apps.crt from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 Relabeled /etc/pki/nginx/private from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 Relabeled /etc/pki/nginx/private/ocp-apps.key from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
+Relabeled /etc/pki/nginx/private/ocp-api.key from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
+Relabeled /etc/pki/nginx/ocp-api.crt from unconfined_u:object_r:cert_t:s0 to system_u:object_r:cert_t:s0
 ```
 
-Review the configuration file and update the IP associated with the **proxy_pass** directive, use the IP for the internal default ingress controller.  Run the next command in the provisioning host
+Review the configuration file and update the IP associated with the **proxy_pass** directives, use the IP for the internal default ingress controller and the API endpoint.  
 ```
 provision $ dig +short \*.apps.ocp4.tale.net
 192.168.30.110
+provision $ dig + short \api.ocp4.tale.net
+192.168.30.100
 
 ...
     proxy_pass https://192.168.30.110;
 ...
+    proxy_pass https://192.168.30.100;
 ```
-Update the NGINX configuration file and use the correct external and internal DNS domains in every virtual server definition:
+
+Use the correct external and internal DNS domains in every virtual server definition:
 ```
 ...
   server_name \*.apps.ocp4.redhat.com;
@@ -1394,6 +1413,7 @@ Update the NGINX configuration file and use the correct external and internal DN
 ...
     proxy_ssl_name $host_head.apps.ocp4.tale.net;
 ...
+  server_name api.ocp4.redhat.com;
 ```
 
 Verify that the configuration is correct:
@@ -1410,6 +1430,14 @@ $ sudo systemctl status nginx
 Enable http and https access through the firewall in the physical host
 ```
 $ sudo firewall-cmd --add-service https --add-service http --zone public --permanent
+```
+The API endopint listens on port 6443 so this port needs to be enable in the firewall
+```
+$ sudo firewall-cmd --add-port 6443/tcp --zone public --permanent
+```
+Finally reload the firewall configuration and verify that the configuration has been correctly applied
+
+```
 $ sudo firewall-cmd --reload
 $ sudo firewall-cmd --list-all --zone public
 ```
@@ -1425,6 +1453,16 @@ $ sudo setsebool -P httpd_can_network_connect on
 
 $ sudo getsebool httpd_can_network_connect
 httpd_can_network_connect --> on
+```
+SELinux will also block NGINX from listening on the API endpoint port 6443. To allow access to this port use the following command
+```
+$ sudo semanage port -a -t http_port_t -p tcp 6443
+$ sudo semanage port -l|grep 6443
+http_port_t                    tcp      6443, 80, 81, 443, 488, 8008, 8009, 8443, 9000
+```
+Reload NGINX configuration to apply the changes
+```
+$ sudo systemctl reload nginx
 ```
 
 ## Enable Internal Image Registry
@@ -1578,7 +1616,3 @@ image-registry-547586978b-2s9vb                    1/1     Running   1          
 ```
 The internal image registry is ready for use.
 
-@#TODO#@
-
-* Add a virtual server in nginx configuration to provide access to the API endpoint
-* Add a virtual server in nginx configuration to provide access to non secure application routes
