@@ -39,7 +39,6 @@
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
   * [Install the Openshift-cluster](#install-the-openshift-cluster) 
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
-  * [Reference documentation](#reference-documentation)
   * [Install and set up NGINX](#install-and-set-up-nginx)
 * [Enable Internal Image Registry](#enable-internal-image-registry)
   * [Add Storage to the Worker Nodes](#add-storage-to-the-worker-nodes)
@@ -1308,13 +1307,6 @@ The one caveat about DNS zones translation is that the web console (https://cons
 
 A local DNS server based on dnsmasq could be used to resolve the console and oauth internal DNS names, but adding the names to the locahost file should also work.
 
-### Reference documentation
-* [ngx_http_proxy module](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
-* [Regular expresions in NGINX](https://www.nginx.com/blog/regular-expression-tester-nginx/)
-* [NGINX Maps](https://johnhpatton.medium.com/nginx-map-comparison-regular-express-229120debe46)
-* [NGINX Reverse Proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/)
-* [ngx_http_sub module](http://nginx.org/en/docs/http/ngx_http_sub_module.html)
-
 ### Install and set up NGINX
 The following steps must be run in the physical host which is the one hosting the reverse proxy.
 
@@ -1464,6 +1456,34 @@ Reload NGINX configuration to apply the changes
 ```
 $ sudo systemctl reload nginx
 ```
+
+### Accessing the cluster
+Accessing the cluster is done the same way as for any other cluster, except that the DNS domain used is the one defined in NGINX virtual servers:
+
+* Using the __oc__ client
+
+    To login using the __oc__ client use the external name defined in the virtual server and the 6443 port.  In the following example the certificate used in NGINX is extracted from the cluster, hence the warning message.
+```
+$ oc login -u kubeadmin -p fI...geI https://api.ocp4.redhat.com:6443
+The server is using a certificate that does not match its hostname: x509: certificate is valid for api.ocp4.tale.net, not api.redhat.com
+You can bypass the certificate check, but any data you send to the server could be intercepted by others.
+Use insecure connections? (y/n): y
+
+Login successful.
+
+You have access to 67 projects, the list has been suppressed. You can list all projects with 'oc projects'
+
+Using project "default".
+```
+* Access to application routes
+
+    For both secure and non secure routes, the URL must contain the external DNS domain defined in the NGINX virtual servers for each type of routes, in the general case this domain will be the same
+```
+$ curl http://httpd-example-bandido.apps.ocp4.redhat.com/
+```
+* Access to the web console and oauth service
+
+    For the speical case of the web console and oauth service, the URL must use the internal DNS domain (https://console-openshift-console.apps.ocp4.tale.net and  https://oauth-openshift.apps.ocp4.tale.net).  This can be achieved by adding this names to the hosts file in the local host.
 
 ## Enable Internal Image Registry
 In the case of a berametal IPI Openshift cluster, the internal image registry is not available after installation, this can be verified by checking the value of managementState in the registry configuration, if the value is __Removed__ the registry is not available:
