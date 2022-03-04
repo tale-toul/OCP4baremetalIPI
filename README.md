@@ -1262,10 +1262,18 @@ bmipi-master3: 36a19373-be1c-448c-8b4e-91ef597cb8e3  52:54:00:a9:6d:73
 bmipi-worker1: 11adbf9b-6f09-4502-bd5d-3d4d4e4a4895  52:54:00:a9:6d:91
 bmipi-worker2: 639e3f63-72d8-4a48-9052-3c1175a7a4ea  52:54:00:a9:6d:92
 ```
+Adding the section rootDeviceHints is required, unlike when doing the installation using a provisioning network.
+
+Use the IP address reported by the susy-tools server when it was started, in the __address:__ URI 
+```
+...
+ * Running on https://172.31.69.209:8080/ (Press CTRL+C to quit) 
+```
+
 Update the hosts section and use the appropriate values for UUID and MAC for each node, for example for bmipi-master1:
 ```
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/245184e0-9e76-42a7-b8c1-f8f64164bc82  
+          address: redfish-virtualmedia://172.31.69.209:8080/redfish/v1/Systems/245184e0-9e76-42a7-b8c1-f8f64164bc82  
           disableCertificateVerification: True
           username: admin
           password: password
@@ -1274,7 +1282,6 @@ Update the hosts section and use the appropriate values for UUID and MAC for eac
             deviceName: /dev/vda
 ```
 
-Adding the section rootDeviceHints is required, unlike when doing the installation using a provisioning network.
 
 Add the pull secret and the ssh key at the end of the file.
 
