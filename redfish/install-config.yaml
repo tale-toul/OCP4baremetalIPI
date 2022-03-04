@@ -33,7 +33,8 @@ platform:
       - name: bmipi-master2
         role: master
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336…6ec                  disableCertificateVerification: True
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336…6ec
+          disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:a9:6d:72
@@ -67,7 +68,7 @@ platform:
           username: admin
           password: password
         bootMACAddress: 52:54:00:a9:6d:92
-      rootDeviceHints:
+        rootDeviceHints:
               deviceName: /dev/vda
 pullSecret: ‘’
 sshKey: |

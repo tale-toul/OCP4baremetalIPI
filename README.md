@@ -18,7 +18,7 @@
   * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm)
   * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
-  * [Install the Openshift cluster](#install-the-openshift-cluster) 
+  * [Install the Openshift cluster with BMC](#install-the-openshift-cluster-with-bmc) 
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
 * [Creating the support VM](#creating-the-support-vm)  
@@ -37,7 +37,7 @@
   * [Create the empty cluster hosts](#create-the-empty-cluster-hosts) 
   * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
-  * [Install the Openshift-cluster](#install-the-openshift-cluster) 
+  * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
 * [Enable Internal Image Registry](#enable-internal-image-registry)
@@ -425,7 +425,7 @@ Update the Operating System
 # dnf update
 # reboot
 ```
-Verify that the provisioning VM has virtualization correctly set up, the last 2 warnings are not relevant, they also come up when running the same command in the physical host:
+Verify that the provisioning VM has virtualization correctly set up.  The last 2 warnings are not relevant, they also appear when running the same command in the physical host:
 ```
 provision # virt-host-validate
   QEU: Checking for hardware virtualization                                     : PASS
@@ -460,6 +460,15 @@ Test that the DNS names of all nodes can be resolved from the provisioning VM
 
 Further details can be obtained from the [official documentation](https://docs.openshift.com/container-platform/4.9/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#preparing-the-provisioner-node-for-openshift-install_ipi-install-installation-workflow)
 
+Log in to the provisioning VM
+```
+# virsh domifaddr provision --source arp
+ Name       MAC address          Protocol     Address
+-------------------------------------------------------------------------------
+ vnet1      52:54:00:9d:41:3c    ipv4         192.168.30.10/0
+
+# ssh root@192.168.30.10
+```
 Create a non privileged user and provide that user with sudo privileges::
 ```
 # useradd kni
@@ -468,15 +477,15 @@ Create a non privileged user and provide that user with sudo privileges::
 # chmod 0440 /etc/sudoers.d/kni
 ```
 
-Enable the http service in the firewall. ake sure the firewalld service is enabled and running:
+Make sure the firewalld service is enabled and running:
 ```
 # systemctl enable firewalld --now
 # systemctl status firewalld
 ```
-Add the rules:
+Enable the http service in the firewall.  Add the rules:
 ```
-$ firewall-cmd --zone=public --add-service=http --permanent
-$ firewall-cmd --reload
+$ sudo firewall-cmd --zone=public --add-service=http --permanent
+$ sudo firewall-cmd --reload
 ```
 
 Create an ssh key for the new user:
@@ -494,12 +503,13 @@ Install the following required packages, some may already be installed:
 $ sudo dnf install libvirt qemu-kvm mkisofs python3-devel jq ipmitool
 ```
 
-odify the user to add the libvirt group to the newly created user:
+Modify the user to add the libvirt group to the newly created user:
 ```
 $ sudo usermod --append --groups libvirt kni
+$ virsh -c qemu:///system list
 ```
 
-Start and enable the libvirtd service:
+Start and enable the libvirtd service, if it has not been done before:
 ```
 $ sudo systemctl enable libvirtd --now
 $ sudo systemctl status libvirtd
@@ -561,7 +571,7 @@ Connection 'Wired connection 2' successfully deactivated …
 Connection 'bridge-slave-eth1' … successfully added.
 ```
 
-Now the dhcp client should assign the same IP to the new bridge interface, if not, reactivate the connection:
+Now the dhcp client should assign the same IP to the new bridge interface, this may take a couple minutes, if not, reactivate the connection:
 ```
 # nmcli con down baremetal
 # nmcli con up baremetal
@@ -608,14 +618,14 @@ $ vim pull-secret.txt
 Download the Openshift client and installer.  
 ```
 $ export VERSION=stable-4.9
-$ export RELEASE_IAGE=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/release.txt | grep 'Pull From: quay.io' | awk -F ' ' '{print $3}')
+$ export RELEASE_IMAGE=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/release.txt | grep 'Pull From: quay.io' | awk -F ' ' '{print $3}')
 $ export cmd=openshift-baremetal-install
 $ export pullsecret_file=~/pull-secret.txt
 $ export extract_dir=$(pwd)
 $ echo $extract_dir
 $ curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/openshift-client-linux.tar.gz | tar zxvf - oc
 $ sudo cp oc /usr/local/bin
-$ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd --to "${extract_dir}" ${RELEASE_IAGE}
+$ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd --to "${extract_dir}" ${RELEASE_IMAGE}
 ```
 
 ### Create the install-config.yaml file
@@ -624,7 +634,7 @@ The provided install-config.yaml file in this repository at provisioning/install
 
 Review the install-config.yaml file provided, add at the end of the file the pull secret downloaded in the previous section, and an ssh public key, the one created for the kni user earlier for example.
 
-### Install the Openshift cluster
+### Install the Openshift cluster with BMC
 
 Create a directory and copy the install-config.yaml file into it.  This is done to make sure a copy of the install-cofig.yaml file survives the installation. The surviving copy is the one kept in the main directory:
 ```
@@ -888,13 +898,11 @@ After any modification to the configuration file restart the dhcpd daemon and ch
 
 This section describes how to set up a metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KVM virtual machines will run.
 
-The region used is N. Virginia as this is the more affordable one I could find.
+In the AWS web site go to __EC2__ -> __Instances__ -> __Launch Instances__
 
-In the AWS web site go to __EC2__ -> __Instances__ -> __Launch new instances__
+Select the AMI __Red Hat Enterprise Linux 8 (HVM), SSD Volume Type__, 64 bit (x86) architecture.
 
-Select the AMI __Red Hat Enterprise Linux 8 (HVM), SSD Volume Type__, 64 bit (x86) architecture must be selected.
-
-In the Instance type page select __c5n.metal__ (192GB RAM, 72 vCPUs) -> __Configure Instance__
+In the Instance type page select __c5n.metal__ (192GB RAM, 72 vCPUs) -> __Configure Instance Details__
 
 Select the VPC and subnet where the host will be deployed.  The subnet must have Internet access properly configured and the instance must get a public IP.
 
@@ -902,19 +910,19 @@ Go to the __Add Storage__ section and set the size of the root device (/dev/sda1
 
 Go to __Add Tags__ section -> __Add Tag__ -> Key=__Name__; Value=__baremetal-ipi__.  This is an optional step, but helps in identifying the instance when more instance exist.
 
-Go to the __Configure Security Group__ section.  Optionally for security reasons set the source for the SSH connections to __My IP__.  Add a new rule for the VMs VNC service: __Add Rule__ -> Type=__Custom TCP__; Protocol=__TCP__; Port Range=__5900-5910__; Source=__My IP__; Description=__VNC service__
+Go to __Configure Security Group__.  Optionally for security reasons set the source for the SSH connections to __My IP__.  Add a new rule for the VNC service: __Add Rule__ -> Type=__Custom TCP__; Protocol=__TCP__; Port Range=__5900-5910__; Source=__My IP__; Description=__VNC__.  Add rules for __HTTP__ and __HTTPS__, these can be selected from the Type drop down.  Add a rule for the __API endpoint__, TCP port 6443.
 
 Go to __Review and Launch__ -> __Launch__
 
 Select an existing key pair or create a new one.  If a new one is created, download the key pair file and change its permissions:
 ```
-$ chmod 0400 kikiriki.pem
+$ chmod 0400 baremetalipi.pem
 ```
 Tick the acknowledgement message " __Launch Instances__"
 
-The metal instance will take a few minutes to start and get ready.  When the instance is up and running, connect via ssh using the key pair file and its public IP address.  This public IP will change when the host is rebooted.
+The metal instance will take a few minutes to start and get ready.  When the instance is up and running, connect via ssh using the key file and the instance public IP address.  This public IP will change when the host is rebooted.
 ```
-$ ssh -i kikiriki.pem ec2-user@35.178.191.131
+$ ssh -i baremetalipi.pem ec2-user@35.178.191.131
 ```
 
 Subscribe the host to Red Hat
@@ -943,7 +951,7 @@ When the instance shows a state of __Stopped__, go to __Instance State__ -> __St
 
 When the instance is in state Running and has passed all Status checks.  Get its public IP and ssh into it
 ```
-$ ssh -i kikiriki.pem ec2-user@18.170.69.216
+$ ssh -i baremetalipi.pem ec2-user@18.170.69.216
 ```
 
 Optional. Start a tmux session:
@@ -1022,9 +1030,9 @@ Copy the rhel8 qcow2 image:
 
 In this architecture there is no provisioning network, only a routable network is required.  
 
-The redfish protocol must be used. Sushy tools provides the Redfish protocol service.
+The redfish protocol is provided by sushy tools.
 
-The following links provide additional information about sushy-tools:
+The following links contain additional information about sushy-tools:
 
 [https://docs.openstack.org/sushy-tools/latest/](https://docs.openstack.org/sushy-tools/latest/)
 [https://gist.github.com/williamcaban/e5d02b3b7a93b497459c94446105872c](https://gist.github.com/williamcaban/e5d02b3b7a93b497459c94446105872c)
@@ -1092,7 +1100,7 @@ Create a user file with a single user for basic HTTP authentication, that will b
 $ htpasswd -c -B -b htusers admin password
 ```
 
-Create the configuration file for the sushy-tools service. A reference file is provided in this repository at sushy.conf.  Use the correct values for the SSL certificate path, the http basic users file, etc.
+Create the configuration file for the sushy-tools service. A reference file is provided in this repository at __sushy.conf__.  Use the correct values for the SSL certificate path, the http basic users file, etc.
 
 The file specified in the section SUSHY_EULATOR_BOOT_LOADER_AP must be present in the system.  In the case of RHEL8 this file belongs to the package edk2-ovmf.
 
@@ -1101,7 +1109,7 @@ The file specified in the section SUSHY_EULATOR_BOOT_LOADER_AP must be present i
 
 Start the service with a command like the following.  The path to the configuration file must be absolute, not relative:
 ```
-# bin/sushy-emulator --config /root/sushy-tools/sushy.conf 
+(sushy-tools)$ sushy-tools/bin/sushy-emulator --config /home/ec2-user/OCP4baremetalIPI/sushy.conf
  * Serving Flask app 'sushy_tools.emulator.main' (lazy loading)
  * Environment: production
    WARNING: This is a development server. Do not use it in a production deployment.
@@ -1146,12 +1154,12 @@ Alternatively the support VM can be imported following the instructions in secti
 
 The DHCP service is optional but recommended, it is used to provide network configuration for the provisioning VM and the nodes in the OCP cluster.
 
-### Create the provisioning V
+### Create the provisioning VM
 
-Create the provisioning VM following the instructions in section [Create the provisioning VM](#create-the-provisioning-vm) , but in this case the command used to create the VM is slightly different: 
+Create the provisioning VM following the instructions in section [Create the provisioning VM](#create-the-provisioning-vm), replace the virt-install command with the following one, which is slightly different; apply the other creation steps unchanged: 
 
-* The reference to the provision network is removed since no such network is used
-* ake sure the MAC address is unique and is the one used by the DHCP server for this VM in the support V
+* The reference to the provision network is removed since no such network exists
+* Make sure the MAC address is unique and is the one used by the DHCP server for this VM.
 ```
 $ sudo virt-install --name=provision --vcpus=4 --ram=24096 \
   --disk path=/var/lib/libvirt/images/provision.qcow2,bus=virtio,size=120  \
@@ -1176,10 +1184,11 @@ The virt-install commands are slightly different from the ones in the sections a
 
 # for x in {1..2}; do echo $x; virt-install --name bmipi-worker${x} --vcpus=4 \
  --ram=16384 --disk path=/var/lib/libvirt/images/bmipi-worker${x}.qcow2,bus=virtio,size=40  \
---os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \        --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot --noautoconsole; done
+ --os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \        
+ --boot hd,menu=on --graphics vnc,listen=0.0.0.0 --noreboot --noautoconsole; done
 ```
 
-Check that the VMs are detected by susy-tools:
+Check that the VMs are detected by susy-tools.  Use the URL reported when sushy-tools is started:
 ```
 $ curl -k --user admin:password https://172.31.75.189:8080/redfish/v1/Systems/
 {
@@ -1230,7 +1239,7 @@ a95336a0-7213-4df4-a0cd-1796aba76ecb bmipi-master2
 639e3f63-72d8-4a48-9052-3c1175a7a4ea bmipi-worker2
 ```
 
-### Prepare the provision V
+### Prepare the provision VM
 
 Follow the instructions in sections:
 * [Set up virtualization in the provisioning VM](#set-up-virtualization-in-the-provisioning-vm)
@@ -1240,23 +1249,36 @@ Follow the instructions in sections:
  
 ### Create the install-config.yaml file
 
-Each host requires the VM’s UUID and its MAC address, use the following command to get that information:
+Use the install-config.yaml file provided in this repository at **redfish/install-config.yaml** as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. match other configurations options defined in other parts of this document, and changing them in this file without updating those other configurations will break the deployment process.
+
+The VM’s UUID and its MAC address is required for each VM, use the following command to get that information.  Run this command in the physical host:
 
 ```
-$ for x in bmipi-master1 bmipi-master2 bmipi-master3 bmipi-worker1 bmipi-worker2; do echo -n "${x} "; sudo virsh domuuid $x|tr "\n" " "; sudo virsh domiflist $x| awk '/52:54/ {print $NF}'; done
+$ for x in bmipi-master1 bmipi-master2 bmipi-master3 bmipi-worker1 bmipi-worker2; do echo -n "${x} "; sudo virsh domuuid $x|tr "\n" " "; \
+  sudo virsh domiflist $x| awk '/52:54/ {print $NF}'; done
 bmipi-master1: 245184e0-9e76-42a7-b8c1-f8f64164bc82  52:54:00:a9:6d:71
 bmipi-master2: a95336a0-7213-4df4-a0cd-1796aba76ecb  52:54:00:a9:6d:72
 bmipi-master3: 36a19373-be1c-448c-8b4e-91ef597cb8e3  52:54:00:a9:6d:73
 bmipi-worker1: 11adbf9b-6f09-4502-bd5d-3d4d4e4a4895  52:54:00:a9:6d:91
 bmipi-worker2: 639e3f63-72d8-4a48-9052-3c1175a7a4ea  52:54:00:a9:6d:92
 ```
+Update the hosts section and use the appropriate values for UUID and MAC for each node, for example for bmipi-master1:
+```
+        bmc:
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/245184e0-9e76-42a7-b8c1-f8f64164bc82  
+          disableCertificateVerification: True
+          username: admin
+          password: password
+        bootMACAddress: 52:54:00:a9:6d:71
+        rootDeviceHints:
+            deviceName: /dev/vda
+```
 
 Adding the section rootDeviceHints is required, unlike when doing the installation using a provisioning network.
 
-Use the install-config.yaml file provided in this repository at redfish/install-config.yaml as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. match other configurations options defined in other part of this document, and changing them will break the deployment process.
+Add the pull secret and the ssh key at the end of the file.
 
-
-### Install the Openshift cluster
+### Install the Openshift cluster with redfish
 
 Create a directory and copy the install-config.yaml file into it.  This is done to make sure a copy of the install-cofig.yaml file survives the installation. The surviving copy is the one kept in the main directory:
 ```
