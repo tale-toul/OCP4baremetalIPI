@@ -1322,24 +1322,24 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## External access to Openshift using NGINX
 
-The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is due to the fact that the IPs for the API endpoint and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is because the IPs for the API endpoint and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
 
-One possible solution to provide access to the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the OCP cluster.
+One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in said the physical host and use it to rely requests to the Openshift cluster.
 
 In this documentation a reverse proxy based on NGINX is used.
 
 The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes through port 443 and insecure application routes through on port 80.
 
-The external DNS names used to access the applications and API endpoint can be different from the internal used by Openshift names.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host (tale.net in this example), the reverse proxy can do the translation between the external and the internal zones.
+The external DNS names used to access the applications and API endpoint can be different from the internal ones used by Openshift.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host (tale.net), the reverse proxy can do the translation between the external and internal zones.
 
-The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The console and oauth URLs can be changed from their default values but these services can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
 A local DNS server based on dnsmasq could be used to resolve the console and oauth internal DNS names, but adding the names to the locahost file should also work.
 
 Additional details about the NGINX configuration can be found in the [nginx directory](nginx/)
 
 ### Install and set up NGINX
-The following steps must be run in the physical host which is the one hosting the reverse proxy.
+The following commands must be run in the physical host.
 
 Install NGINX packages
 ```
@@ -1353,7 +1353,7 @@ $ sudo systemctl status nginx
 ```
 Create DNS entries for the API endpoint and the default ingress controller.  The public DNS zone used in this example to access the Openshift cluster is _ocp4.redhat.com_
 
-Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the physical host.  Do this in the public DNS resolver hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
+Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the physical host.  Do this in the public DNS resolver for the hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
 
 ```
 $ host api.ocp4.redhat.com
@@ -1369,7 +1369,7 @@ Copy the file to /etc/nginx/conf.d/
 ```
 $ sudo cp ocp4.conf /etc/nginx/conf.d/
 ```
-The NGINX configuration file contains the definition for a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__ however the certificate used in this example is obtained from the Openshift cluster default ingress controller: 
+The NGINX configuration file contains the definition for a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__, however the certificate used in this example is obtained from the Openshift cluster default ingress controller which is valid for __apps.ocp4.talnet.net__: 
 
 Extracted the cerfiticate from the OCP 4 cluster, the following command will create two files:
 ```
@@ -1390,7 +1390,7 @@ $ sudo mkdir /etc/pki/nginx/private/
 $ sudo cp tls.key /etc/pki/nginx/private/ocp-apps.key
 $ sudo ls -l /etc/pki/nginx/
 ```
-A similar procedure to the one described above is used to collect the API endpoint x509 certificate, the __--confirm__ option is used to overwrite any existing file with the same name.
+A similar procedure is used to collect the API endpoint x509 certificate, the __--confirm__ option is used to overwrite any existing file with the same name.
 ```
 $ oc extract secret/external-loadbalancer-serving-certkey -n openshift-kube-apiserver --confirm
 ```
@@ -1438,7 +1438,11 @@ Use the correct external and internal DNS domains in every virtual server defini
 ...
   server_name api.ocp4.redhat.com;
 ```
-
+Update the local DNS resolution for the following records to resolve with the public IP where the nginx reverse proxy is providing service. For example:
+```
+*.apps.ocp4.tale.net   44.200.45.58
+api.ocp4.tale.net      44.200.45.58
+```
 Verify that the configuration is correct:
 ```
 $ sudo nginx -t
@@ -1464,7 +1468,7 @@ Finally reload the firewall configuration and verify that the configuration has 
 $ sudo firewall-cmd --reload
 $ sudo firewall-cmd --list-all --zone public
 ```
-In case of using an AWS EC2 instance, add the 443 port to the security group in the AWS EC2 instance.
+In case of using an AWS EC2 instance, add the ports 443 and 6443 to the security group in the AWS EC2 instance.
 
 If the physical host uses SELinux, it is possible that the nginx service is not allowed to open outgoing network connections, a message like the following will appear in the physical host's audit log
 ```
@@ -1517,17 +1521,17 @@ $ curl http://httpd-example-bandido.apps.ocp4.redhat.com/
     For the speical case of the web console and oauth service, the URL must use the internal DNS domain (https://console-openshift-console.apps.ocp4.tale.net and  https://oauth-openshift.apps.ocp4.tale.net).  This can be achieved by adding this names to the hosts file in the local host.
 
 ## Enable Internal Image Registry
-In the case of a berametal IPI Openshift cluster, the internal image registry is not available after installation, this can be verified by checking the value of managementState in the registry configuration, if the value is __Removed__ the registry is not available:
+In a berametal IPI Openshift cluster, the internal image registry is not available after installation, this can be verified by checking the value of managementState in the registry configuration, if the value is __Removed__ the registry is not available:
 
 ```
-oc get configs.imageregistry/cluster -o yaml
+$ oc get configs.imageregistry/cluster -o yaml
 ...
 spec:
   logLevel: Normal
   managementState: Removed
 ...
 ```
-The reason is that no storage for the image registry has been configured.  Follow the instruction in the official documentation [Configuring the registry for bare metal ](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html) to setup the image registry.
+The reason for this is that no storage for the image registry has been configured.  Follow the instruction in the official documentation [Configuring the registry for bare metal ](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html) to setup the image registry.
 
 In this example the storage will be provided by additional volumes added to the worker KVM VMs
 
@@ -1574,7 +1578,7 @@ WORKER2
       <backingStore/>
       <target dev='vdb' bus='virtio'/>
 
- # ssh -i .ssh/bmipi core@192.168.30.30 lsblk
+provision $ ssh -i .ssh/bmipi core@192.168.30.30 lsblk
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 vda    252:0    0   40G  0 disk 
 ├─vda1 252:1    0    1M  0 part 
@@ -1594,17 +1598,21 @@ vda    252:0    0   40G  0 disk
 └─vda5 252:5    0   65M  0 part 
 vdb    252:16   0    5G  0 disk
 ```
-The new disks will be added as PVs using the [Local Storage Operator](https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html) follow the instructions in the offcial documentation to install and setup the Operator(https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html)
+The new disks will be added as PVs using the [Local Storage Operator](https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html) follow the instructions in the [official documentation](https://docs.openshift.com/container-platform/4.9/storage/persistent_storage/persistent-storage-local.html) to install and setup the Operator.
 
 An example definition for the local volume can be found in the file **storage/localVolume-vol2.yaml**
+```
+provision $ oc create -f local-volume.yaml 
+localvolume.local.storage.openshift.io/vol2 created
+```
 
 Verify that the local volume and PVs were created
 ```
-$ oc get localvolume -n openshift-local-storage
+provision $ oc get localvolume -n openshift-local-storage
 NAME   AGE
 vol2   4m59s
 
-$ oc get pv
+provision $ oc get pv
 NAME                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
 local-pv-10328d04   5Gi        RWO            Delete           Available           registorage             5m31s
 local-pv-9fa5f293   5Gi        RWO            Delete           Available           registorage             5m34s
@@ -1613,24 +1621,25 @@ local-pv-9fa5f293   5Gi        RWO            Delete           Available        
 
 Once there are Persistent Volumes (PVs) available to be used by the internal image registry, assign one of them to the registry.
 
-The official documentation instructions will not work in this particular case because of the storage used here: RWX vs RWO, and non default storage class.  [Configuring the registry for bare metal](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html)
+The official documentation instructions will not work in this particular case because of the storage used here: RWO vs RWX, and non default storage class.  [Configuring the registry for bare metal](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html)
 
-The basic steps to make the registry operational are:
+The steps to make the registry operational are:
 
 * Change the management state to __Managed__
+* Change the rolloutStrategy to Recreate
 * Add a storage claim
 
-Both of these configuration changes are applied to the object __configs.imageregistry/cluster__.
+All these configuration changes are applied to the object __configs.imageregistry/cluster__.
 
-The storage provided by the local volume operator is of type ReadWriteOnce (RWO) so only one instance of the image registry pod will run, making the servie not highly available.
+The storage provided by the Local Storage operator is of type ReadWriteOnce (RWO) which limits the image registry deployment to one pod instance, making the servie not highly available.
 
-Create a PVC that will bind to one of the PVs provided by the local storage operator, this PVC will later be assigned to the registry.  A file definition example can be found in at **storage/image-registry-storage-PVC.yaml**.  Make sure that the size specified in the PVC, the access mode and the storage class name match those of the PV:
+Create a PVC that will bind to one of the PVs provided by the local storage operator, this PVC will later be assigned to the registry.  A file definition example can be found in at **storage/image-registry-storage-PVC.yaml**.  Make sure that the size specified in the PVC, the access mode and the storage class name all match those of the PV:
 ```
-$ oc get pv
-NAME                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM                                             STORAGECLASS   REASON   AGE
-local-pv-9fa5f293   5Gi        RWO            Delete           Available                                                     registorage             16h
+provision $ oc get pv
+NAME                CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM     STORAGECLASS   REASON   AGE
+local-pv-9fa5f293   5Gi        RWO            Delete           Available             registorage             16h
 
-
+provision $ grep -A7 spec image-registry-storage-PVC.yaml
 spec:
   storageClassName: "registorage"
   accessModes:
@@ -1638,26 +1647,33 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  volumeMode: Filesystem
 ```
-Create the PVC and verify that it has bound to one PV
+Create the PVC 
 ```
-$ oc create -f image-registry-storage-PVC.yaml
+provision $ oc create -f image-registry-storage-PVC.yaml
+```
+Initially the PVC is not bound to the PV, it is waiting for the claim to be used by a pod.
 
-$ oc get pvc
-NAME                     STATUS   VOLUME              CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-image-registry-storage   Bound    local-pv-10328d04   5Gi        RWO            registorage    15h
+Assign the storage to the image registry and set the management status to managed.  Set the rolloutStrategy to Recreate, this may be required if the type of storage used is RWO, if the rolloutStrategy is kept as RollingUpdate the following message may appear in the status section of the config object `Unable to apply resources: unable to sync storage configuration: cannot use ReadWriteOnce access mode with RollingUpdate rollout strategy`
+
+Edit the configuration object and add the following code.  Make sure that the name of the claim matches the name of the PVC created earlier:
 ```
-To associate the storage with the image registry and set the management status as managed, edit the configuration object and add the following code.  Make sure that the name of the claim matches the name of the PVC created earlier:
-```
-$ oc edit configs.imageregistry/cluster
+provision $ oc edit configs.imageregistry/cluster
 spec:
   managementState: Managed
+  rolloutStrategy: Recreate
   storage:
     pvc:
       claim: image-registry-storage
 ...
 ```
-After saving the changes, verify that a new image-registry pod is created in the namespace openshift-image-registry
+Verify that the PVC has bound to a PV
+provision $ oc get pvc
+NAME                     STATUS   VOLUME              CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+image-registry-storage   Bound    local-pv-10328d04   5Gi        RWO            registorage    15h
+
+Verify that a new image-registry pod is created in the namespace openshift-image-registry
 ```
 $ oc get pods -n openshift-image-registry
 NAME                                               READY   STATUS    RESTARTS      AGE
@@ -1666,4 +1682,3 @@ image-registry-547586978b-2s9vb                    1/1     Running   1          
 ...
 ```
 The internal image registry is ready for use.
-
