@@ -1,1 +1,6 @@
 .*.swp
+Terraform/*.tfstate*
+Terraform/.terraform
+Terraform/.terraform.lock.hcl
+Terraform/ssh.pub
+
