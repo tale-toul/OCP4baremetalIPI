@@ -3,4 +3,8 @@ Terraform/*.tfstate*
 Terraform/.terraform
 Terraform/.terraform.lock.hcl
 Terraform/ssh.pub
+Ansible/ansible.log
+Ansible/group_vars/all/terraform_outputs.var
+Ansible/group_vars/all/subscription.data
+Ansible/vault-id
 
