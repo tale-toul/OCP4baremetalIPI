@@ -1,0 +1,81 @@
+#Deploy Infrastructure Resources with Terraform
+
+## Create the AWS metal instance
+
+The terraform template in this directory creates a c5n.metal instance in AWS to be used as a base to deploy a baremetal OCP 4 cluster using KVM/libvirt.
+
+The elements created are:
+
+* A VPC
+* A public subnet in the first availability zone of the VPC
+* An Internet gateway to provide access to and from the Intetnet to the EC2 instance created in the public zone
+* A routing table that links the public subnet to the Internet Gateway
+* An elastic IP for the EC2 instance 
+* A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5010(vnc), 6443(OCP API)
+* A security group to allow outbound connections from the EC2 instance and hence any VM to any port in the outside world
+* An EC2 instance of type c5n.metal, powerfull enough to run the KVM VMs
+
+## Applying the terraform template
+
+The terraform template expects to find a file containing the public part of an ssh key in the Terraform directory, the name for the file must be __ssh.pub__.  If a different name is used for the file, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be installed in the EC2 instance so it is possible to connect via ssh when fully deployed.
+
+The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is us-east-1 (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
+
+Apply the template to create the infrastructure with a command like:
+```
+$ terraform apply -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh"
+```
+When all the infrastructure components have been created some output values are shown, of special interest is the public IP of the EC2 instance:
+
+```
+baremetal_public_ip = "4.83.45.254"
+bastion_private_ip = "172.20.12.225"
+public_subnet_cidr_block = "172.20.0.0/20"
+region_name = "us-east-1"
+vpc_cidr = "172.20.0.0/16"
+```
+## Connecting to the EC2 instance
+
+Ssh is used to open a shell with the EC2 instance created by terraform.  
+
+The elements required are:
+* The private part of the ssh key injected earlier 
+* The user to connect is **ec2-user**
+* The public IP returned by terraform output, can also be obtained with the command
+```
+$ terraform output baremetal_public_ip
+"4.83.45.254"
+```
+The command to connect would be something like:
+```
+$ ssh -i baremetal-ssh.priv ec2-user@4.83.45.254
+```
+
+## Selecting the AMI to use
+
+The AMI used to inject an Operating System in the EC2 instance is based on RHEL 8.  Terraform allows the automatic selection of the AMI based on a data source and selection filters.
+
+In the following example the latest AMI matching the filters will be used.  The owner of the image is Red Hat "309956199498", the type of virtualization is hvm, the architecture is x86_64, and the name is expected to start with RHEL\*8.5.  If a different version of RHEL is to be used, the name should be updated accordingly.
+
+The AMIS are region dependent, but the region is not specified because it is defined in the aws provider section, at the begginning of the terraform template.
+
+```
+data "aws_ami" "rhel8" {
+  most_recent = true
+  owners = ["309956199498"]
+  filter {
+    name = "virtualization-type"
+    values = ["hvm"]
+  }
+  filter {
+    name = "architecture"
+    values = ["x86_64"]
+  }
+  filter {
+    name = "name"
+    values = ["RHEL*8.5*"]
+  }
+}
+```
+
+

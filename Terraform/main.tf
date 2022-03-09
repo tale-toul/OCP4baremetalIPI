@@ -1,7 +1,6 @@
 #PROVIDERS
 provider "aws" {
   region = var.region_name
-  shared_credentials_file = "aws-credentials.ini"
 }
 
 #Provides a source to create a short random string 
@@ -190,9 +189,30 @@ resource "aws_key_pair" "ssh-key" {
   public_key = file("${path.module}/${var.ssh-keyfile}")
 }
 
+#AMI
+data "aws_ami" "rhel8" {
+  most_recent = true
+  owners = ["309956199498"]
+
+  filter {
+    name = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name = "name"
+    values = ["RHEL*8.5*"]
+  }
+}
+
 #Baremetal host
 resource "aws_instance" "baremetal" {
-  ami = var.rhel-ami[var.region_name]
+  ami = data.aws_ami.rhel8.id
   instance_type = "c5n.metal"
   subnet_id = aws_subnet.subnet_pub.id
   vpc_security_group_ids = [aws_security_group.sg-ssh-in.id,aws_security_group.sg-web-in.id,aws_security_group.sg-vnc-in.id,aws_security_group.sg-all-out.id,aws_security_group.sg-api-in.id]
