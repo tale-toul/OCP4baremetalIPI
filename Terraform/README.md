@@ -1,4 +1,4 @@
-#Deploy Infrastructure Resources with Terraform
+# Deploy Infrastructure Resources with Terraform
 
 ## Create the AWS metal instance
 

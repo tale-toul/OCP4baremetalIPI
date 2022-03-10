@@ -898,7 +898,7 @@ After any modification to the configuration file restart the dhcpd daemon and ch
 
 This section describes how to set up a metal instance in AWS to be used as the physical server (AKA hypervisor) in which the KVM virtual machines will run.
 
-The same process described here can be automated with terraform and ansible, check the [Terraform](https://github.com/tale-toul/OCP4baremetalIPI/blob/main/Terraform) and [Ansible](https://github.com/tale-toul/OCP4baremetalIPI/blob/main/nginx/Ansible) directories for futher instructions.
+The same process described here can be automated with terraform and ansible, check the [Terraform](https://github.com/tale-toul/OCP4baremetalIPI/blob/main/Terraform) and [Ansible](https://github.com/tale-toul/OCP4baremetalIPI/blob/main/Ansible) directories for futher instructions.
 
 In the AWS web site go to __EC2__ -> __Instances__ -> __Launch Instances__
 
