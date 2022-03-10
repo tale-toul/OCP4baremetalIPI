@@ -17,14 +17,19 @@ The elements created are:
 
 ## Applying the terraform template
 
-The terraform template expects to find a file containing the public part of an ssh key in the Terraform directory, the name for the file must be __ssh.pub__.  If a different name is used for the file, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be installed in the EC2 instance so it is possible to connect via ssh when fully deployed.
+The terraform template requires a public ssh key file in the Terraform directory, the name for the file must be __ssh.pub__.  If a different name is used for the file, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be installed in the EC2 instance so it is possible to connect via ssh when fully deployed.
 
-The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is us-east-1 (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
+The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is **us-east-1** (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
 
 Apply the template to create the infrastructure with a command like:
 ```
 $ terraform apply -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh"
 ```
+If the terraform variables are used with non default values, keep a copy of the command so the same values are used to destroy the infrastructure:
+```
+$ echo !! > terraform_apply.txt
+```
+
 When all the infrastructure components have been created some output values are shown, of special interest is the public IP of the EC2 instance:
 
 ```
@@ -51,7 +56,7 @@ The command to connect would be something like:
 $ ssh -i baremetal-ssh.priv ec2-user@4.83.45.254
 ```
 
-## Selecting the AMI to use
+## Selecting the AMI
 
 The AMI used to inject an Operating System in the EC2 instance is based on RHEL 8.  Terraform allows the automatic selection of the AMI based on a data source and selection filters.
 
