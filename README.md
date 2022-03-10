@@ -767,7 +767,7 @@ Add the same ports above to the security rule in the AWS instance
 
 Connect to libvirt daemon from the local host using virt-manager, with a command like:
 ```
-$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=benaka.pem'
+$ virt-manager -c 'qemu+ssh:///ec2-user@44.200.144.12/system?keyfile=benaka.pem'
 ```
 This command may take a couple minutes before actually showing the virt-manager interface.
 

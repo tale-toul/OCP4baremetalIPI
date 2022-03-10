@@ -74,17 +74,22 @@
         name: libvirtd
         state: started 
         enabled: yes
+    - name: Add ec2-user to libvirt group
+      user:
+        name: ec2-user
+        groups: libvirt
+        append: yes
     - name: Update OS
       dnf:
         name: "*"
         state: latest
       register: _os_update
     - pause:
-        prompt: "Operating System has been updated.  Reboot the host? (yes|no)"
+        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
         echo: true
       register: _reboot
       when: _os_update.changed == True
     - name: Reboot if OS updated
       reboot:
         reboot_timeout: 1300
-      when: _reboot.user_input == "yes"
+      when: _reboot.user_input is defined and _reboot.user_input == "yes"
