@@ -228,9 +228,9 @@ Change the owner and group to qemu:
     /var/lib/libvirt/images/bmipi-${x}.qcow2; done
 ```
 
-Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network first, where the DHCP and PXE services from ironiq will provide the necessary information. 
+Create the 3 master VMs using the empty disks created in the previous step.  These are connected to both the routable and the provisioning networks.  The order in which the NICS are created is important so that if the VM cannot boot from the disk, which is the case at first boot, it will try to do it through the NIC in the provisioning network where the DHCP and PXE services from ironiq will provide the necessary information. 
 
-The MAC addresses for the routable and provisioning network NICs are specified so they can easily match the ones added to the external DHCP and install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
+The MAC addresses for the routable and provisioning network NICs are specified so they match the ones defined in the external DHCP server and the install-config.yaml file, without the need to update the configuration of those services every time a new set of machines are created:
 
 ```
 # for x in {1..3}; do echo $x; virt-install --name bmipi-master${x} --vcpus=4 \
