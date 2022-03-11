@@ -255,4 +255,7 @@ output "public_subnet_cidr_block" {
   value = aws_subnet.subnet_pub.cidr_block
   description = "Network segments for the public subnets"
 }
-
+output "ssh_certificate" {
+  value = var.ssh-keyfile
+  description = "Public key for the certificate injected in the EC2 instance"
+}
