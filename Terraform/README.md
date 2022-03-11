@@ -30,7 +30,7 @@ If the terraform variables are used with non default values, keep a copy of the 
 $ echo !! > terraform_apply.txt
 ```
 
-When all the infrastructure components have been created some output values are shown, of special interest is the public IP of the EC2 instance:
+When all the infrastructure components have been created, output variables are shown, of special interest is the public IP of the EC2 instance:
 
 ```
 baremetal_public_ip = "4.83.45.254"
@@ -40,6 +40,8 @@ region_name = "us-east-1"
 vpc_cidr = "172.20.0.0/16"
 ```
 ## Connecting to the EC2 instance
+
+It may take a few minutes after creation for the EC2 instance to be ready to receive connections.
 
 Ssh is used to open a shell with the EC2 instance created by terraform.  
 
@@ -82,5 +84,3 @@ data "aws_ami" "rhel8" {
   }
 }
 ```
-
-

@@ -66,7 +66,7 @@ The main two requirements for the physical host are:
 * Contains enough compute resources (memory, CPU, disk) to support 6 or 7 virtual machines.  At least 64GB memory, 16 CPU cores and 500GB disk space is required.
 * Supports libvirt/KVM virtualization 
 
-The hypervisor's Operating System used in this instructions is RHEL 8, other linux distributions could be used but there will be some differences in the name of the packages installed, configuration files and options.
+The hypervisor's Operating System used in these instructions is RHEL 8, other linux distributions could be used but there will be some differences in the name of the packages installed, configuration files and options.
 
 Refer to the section [Setup the physical host in AWS](#setup-the-physical-host-in-aws) to create a hypervisor host based on a metal instance in AWS.  
 
@@ -81,7 +81,7 @@ The architecture design for this cluster is as follows:
 
 ![Provisioning network base architecture](images/arch1.png)
   
-The physical server (AKA hypervisor) where the KVM VMs are created must support nested virtualization and have it enabled: [Using nested virtualization in KVM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/)
+The physical server (AKA hypervisor) must support nested virtualization and have it enabled: [Using nested virtualization in KVM](https://docs.fedoraproject.org/en-US/quick-docs/using-nested-virtualization-in-kvm/)
 
 Check if nested virtualization is supported, a value of 1 means that it is supported and enabled.
 ```
@@ -748,7 +748,7 @@ $ oc -n openshift-machine-api get bmh
 
 ### Connecting to the VMs with virt-manager
 
-This instructions can be applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
+These instructions can be applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
 
 Add the ec2-user to the libvirt group:
 ```
@@ -767,7 +767,7 @@ Add the same ports above to the security rule in the AWS instance
 
 Connect to libvirt daemon from the local host using virt-manager, with a command like:
 ```
-$ virt-manager -c 'qemu+ssh:///ec2-user@44.200.144.12/system?keyfile=benaka.pem'
+$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=benaka.pem'
 ```
 This command may take a couple minutes before actually showing the virt-manager interface.
 

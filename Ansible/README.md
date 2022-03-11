@@ -1,6 +1,6 @@
 # Setup baremetal instance with Ansible
 
-## How to subscribe the host with Red Hat
+## Subscribe the host with Red Hat
 The host is subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
 
 The data is stored in the file **group_vars/all/subscription.data**.  The variables defined in this file are called from the ansible playbook.
@@ -13,7 +13,7 @@ It is a good idea to encrypt this file with ansible-vault, for example to encryp
 $ ansible-vault encrypt --vault-id vault-id secrets
 ```
 
-## How to add the ec2-user ssh key to ansible
+## Add the ec2-user ssh key to ansible
 
 The playbook needs access to the private ssh key used to connect to the host as the user ec2-user.  Actually it is not the playbook itself but the environment which has access to the ssh private key.
 
@@ -31,13 +31,18 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 $ cat ~/.ssh/upi-ssh.pub 
 ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote.csb
 ```
+## Add the RHEL 8 disk image 
+
+Get the qcow2 image for RHEL 8 from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.5 KVM Guest Image.
+
+Copy the image to **Ansible/rhel8.qcow2**.  This is the location and name that the ansible playbook will use to locate the file, if the file is in a different location or has a different name update the variable **rhel8_image** either in the file **group_vars/all/general.var** or by defining the variable in the command line, see next section.
 
 ## Running the playbook
 
-Run the playbook with the following command:
+Run the playbook with the following command.  In this case the RHEL 8 image is in a different path than default:
 
 ```
-$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id
+$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id -e rhel8_image=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2
 ```
 ## Rebooting the host after OS update
 The playbook contains a task to update the Operating System, depending on what packages were updated, the kernel for example, the host may require a reboot.

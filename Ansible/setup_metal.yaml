@@ -79,6 +79,15 @@
         name: ec2-user
         groups: libvirt
         append: yes
+    - name: Copy rhel8 disk image 
+      copy:
+        src: "{{ rhel8_image }}"
+        dest: /var/lib/libvirt/images/rhel8.qcow2
+        owner: qemu
+        group: qemu
+        mode: '0644'
+    - name: Apply SELinux file context to disk image
+      command: restorecon -R -Fv /var/lib/libvirt/images/rhel8.qcow2
     - name: Update OS
       dnf:
         name: "*"
