@@ -68,6 +68,9 @@
           - libguestfs-tools
           - tmux
           - git
+          - gcc
+          - libvirt-devel
+          - ipmitool
         state: present
     - name: Enable and start libvirt service
       service:
@@ -79,6 +82,22 @@
         name: ec2-user
         groups: libvirt
         append: yes
+    - name: Install Virtual BMC
+      pip:
+        name: virtualbmc
+    - name: Copy Virtual BMC systemd unit
+      copy:
+        src: vbmcd.service
+        dest: /etc/systemd/system/vbmcd.service
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Enable and start Virtual BMC service
+      systemd:
+        daemon_reload: yes
+        name: vbmcd
+        enabled: yes
+        state: started
     - name: Update OS
       dnf:
         name: "*"
