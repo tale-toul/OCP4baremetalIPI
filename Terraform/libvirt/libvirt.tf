@@ -101,7 +101,7 @@ resource "libvirt_domain" "provision_domain" {
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:9d:41:3c"
+    mac        = "52:54:00:9D:41:3C"
   }
 
   boot_device {
@@ -148,11 +148,11 @@ resource "libvirt_domain" "master_domains" {
 
   network_interface {
     network_id = libvirt_network.provision.id
-    mac        = "52:54:00:74:dc:a${count.index}"
+    mac        = "52:54:00:74:DC:A${count.index}"
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:a9:6d:7${count.index} "
+    mac        = "52:54:00:A9:6D:7${count.index}"
   }
 
   boot_device {
@@ -200,11 +200,11 @@ resource "libvirt_domain" "worker_domains" {
 
   network_interface {
     network_id = libvirt_network.provision.id
-    mac        = "52:54:00:74:dc:d${count.index}"
+    mac        = "52:54:00:74:DC:D${count.index}"
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:a9:6d:9${count.index} "
+    mac        = "52:54:00:A9:6D:9${count.index}"
   }
 
   boot_device {
@@ -241,10 +241,21 @@ data "template_file" "support_config" {
   }
 }
 
+data "template_file" "support_net_config" {
+  template = file ("${path.module}/support_network_config.cfg")
+
+  vars = {
+    address = var.support_net_config.address
+    nameserver = var.support_net_config.nameserver
+    gateway = var.support_net_config.gateway
+  }
+}
+
 resource "libvirt_cloudinit_disk" "support_cloudinit" {
   name = "support.iso"
   pool = libvirt_pool.pool_default.name
   user_data = data.template_file.support_config.rendered
+  network_config = data.template_file.support_net_config.rendered
 }
 
 #Support VM

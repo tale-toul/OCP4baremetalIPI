@@ -10,3 +10,17 @@ variable "number_of_workers" {
   type = number
   default = 3
 }
+
+variable "support_net_config" {
+  description = "Network configuration parameters for the support VM"
+  type = object({
+    address = string 
+    nameserver = string
+    gateway = string
+  })
+  default = {
+    address = "192.168.30.3/24"
+    nameserver = "8.8.8.8"
+    gateway = "192.168.30.1"
+  }
+}

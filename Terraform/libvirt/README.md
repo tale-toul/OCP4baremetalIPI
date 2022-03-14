@@ -40,13 +40,14 @@ Copy the image to **Terraform/libvirt/rhel8.qcow2**.  This is the default locati
 ```
 $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qcow2
 ```
-* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the value in the command line as in the example later.
+* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
+
+* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.
 
 * Use a command like the following to deploy the infrastructure.  In this case a non default location for the base RHEL 8 image has been specified:
 ```
 $ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2" -var="number_of_workers=2"
 ```
-
 
 ## Created resources
 The template creates the following components:
