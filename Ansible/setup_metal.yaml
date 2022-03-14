@@ -98,6 +98,18 @@
         name: vbmcd
         enabled: yes
         state: started
+    - name: Enable and start firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+    - name: Allow access to vbmc VMs ports in firewall
+      firewalld:
+        port: 7001-7005/udp
+        zone: libvirt
+        permanent: yes
+        immediate: yes
+        state: enabled
     - name: Update OS
       dnf:
         name: "*"

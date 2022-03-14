@@ -4,3 +4,9 @@ variable "rhel8_image_location" {
   type = string
   default = "rhel8.qcow2"
 }
+
+variable "number_of_workers" {
+  description = "How many worker VMs to create"
+  type = number
+  default = 3
+}
