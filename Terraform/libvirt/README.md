@@ -60,16 +60,18 @@ The template creates the following components:
 * A template file containing the cloud init configuration file
 * A cloud init disk based on the contents of the above configuration file
 * A provisioning VM.  It is initialized with the cloud init configuration on first boot; it is connected to both networks (chucky and provision); it uses the disk volume defined earlier; it can be contacted using VNC
+* A support VM.  This VM will run the DHCP and DNS services for the OCP cluster. 
 
 ## Cloud init configuration
 Reference documentation and examples:
-[Cloud init official module docs](https://cloudinit.readthedocs.io/en/latest/topics/modules.html)
-[Cloud init official examples](https://cloudinit.readthedocs.io/en/latest/topics/examples.html)
-[terraform module libvirt example](https://github.com/dmacvicar/terraform-provider-libvirt/tree/main/examples/v0.13/ubuntu)
+* [Cloud init official module docs](https://cloudinit.readthedocs.io/en/latest/topics/modules.html)
+* [Cloud init official examples](https://cloudinit.readthedocs.io/en/latest/topics/examples.html)
+* [Terraform module libvirt example](https://github.com/dmacvicar/terraform-provider-libvirt/tree/main/examples/v0.13/ubuntu)
+* [Red Hat cloud init documentation](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_cloud-init_for_rhel_8/index)
 
-The RHEL 8 base image is capable of running cloud init on first boot to configure some of the host parameters, and the libvirt terraform module supports the use of cloud init when creating a VM.
+The RHEL 8 base image is capable of running cloud init on first boot to configure some of the operating system parameters, and the libvirt terraform module supports the use of cloud init when creating a VM.
 
-A template file containing the cloud init configuration is available.  Since this is a template, variables can be used to define values at rendering time.  So far only the ssh public keys is provided as a variable.  Variables must be defined at the template_file data definition block in terraform.
+Some template files containing the cloud init configuration are used.  Since they are templates, variables can be used to define values at rendering time.  Variables must be defined at the template_file data definition block in terraform.
 
 At the moment both a password and a ssh key are enable for root user authentication, this is a temporary solution since initially the VM has no network configuration and cannot be accessed using ssh.  If the password configuration is to be left permanently, a variable must be used instead of a literal value, for security reasons: 
 
@@ -95,6 +97,19 @@ growpart:
   ignore_growroot_disabled: false
 ```
 
+The network configuration is provided in a different file, as the [NoCloud datasource documentation](https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html) states, the toplevel network key is not used in the file:
+```
+version: 1
+config:
+- type: physical
+  name: eth0
+  subnets:
+  - address: ${address}
+    dns_nameservers: 
+    - ${nameserver}
+    gateway: ${gateway}
+    type: static
+```
 ## Dependencies 
 This terraform template depends on the output variables from the main terraform template that creates the metal instance in AWS.  The output variables are obtained from a local backend:
 
