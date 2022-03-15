@@ -34,13 +34,13 @@ commands will detect it and remind you to do so if necessary.
 
 * Add the RHEL 8 disk image 
 
-Get the qcow2 image for RHEL 8 from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.5 KVM Guest Image.
+     Get the qcow2 image for RHEL 8 from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.5 KVM Guest Image.
 
-Copy the image to **Terraform/libvirt/rhel8.qcow2**.  This is the default location and name that the terraform template uses to locate the file, if the file is in a different location or has a different name, update the variable **rhel8_image_location** by defining the variable in the command line.
+     Copy the image to **Terraform/libvirt/rhel8.qcow2**.  This is the default location and name that the terraform template uses to locate the file, if the file is in a different location or has a different name, update the variable **rhel8_image_location** by defining the variable in the command line.
 ```
 $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qcow2
 ```
-* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
+* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
 
 * The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.
 
@@ -71,9 +71,11 @@ Reference documentation and examples:
 
 The RHEL 8 base image is capable of running cloud init on first boot to configure some of the operating system parameters, and the libvirt terraform module supports the use of cloud init when creating a VM.
 
-Some template files containing the cloud init configuration are used.  Since they are templates, variables can be used to define values at rendering time.  Variables must be defined at the template_file data definition block in terraform.
+Some template files containing the cloud init configuration are used.  Since they are templates, variables can be used to define values at rendering time.  These variables must be defined at the template file data definition block in terraform.
 
 At the moment both a password and a ssh key are enable for root user authentication, this is a temporary solution since initially the VM has no network configuration and cannot be accessed using ssh.  If the password configuration is to be left permanently, a variable must be used instead of a literal value, for security reasons: 
+
+The ssh key injected in the VM is the same one used in the EC2 instance 
 
 ```
 $ cat cloud_init.cfg 

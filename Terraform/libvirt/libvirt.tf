@@ -57,6 +57,7 @@ resource "libvirt_volume" "rhel_volume" {
   depends_on = [libvirt_pool.pool_default]
 }
 
+#PROVISION VM 
 resource "libvirt_volume" "provision_volume" {
   name = "provision.qcow2"
   base_volume_id = libvirt_volume.rhel_volume.id

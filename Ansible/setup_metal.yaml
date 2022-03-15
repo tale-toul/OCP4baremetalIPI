@@ -6,7 +6,7 @@
   tasks:
     - name: Remove stale entries from known_hosts file in the ansible host
       command: ssh-keygen -R {{ item }}
-      with_items: "{{ groups['all'] }}"
+      with_items: "{{ groups['baremetal'] }}"
     - name: Save terraform variables to a file
       shell: terraform output |tr '=' ':' > ../Ansible/group_vars/all/terraform_outputs.var
       args:
@@ -60,7 +60,7 @@
         mode: '0751' 
     - name: Apply new SELinux file context to filesystem
       command: restorecon -R -Fv /var/lib/libvirt/images/
-    - name: Install required pacakges
+    - name: Install required packages
       dnf:
         name: 
           - '@virtualization-host-environment'

@@ -34,6 +34,10 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 
 ## Running the playbook
 
+Before running the playbook make sure the EC2 instance is fully initialized and accepting ssh connections, this may take a few minutes after creation.
+
+![Metal instance ready](images/ec2-ready.png)
+
 Run the playbook with the following command:
 
 ```
