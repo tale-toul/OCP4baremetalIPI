@@ -17,7 +17,7 @@ The elements created are:
 
 ## Applying the terraform template
 
-The terraform template requires a public ssh key file in the Terraform directory, the name for the file must be __ssh.pub__.  If a different name is used for the file, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be installed in the EC2 instance so it is possible to connect via ssh when fully deployed.
+The terraform template requires a public ssh key file in the Terraform directory, the name for the file must be __ssh.pub__, if a different name is used, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be injected into the EC2 instance so the ec2-user can later connect via ssh.
 
 The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is **us-east-1** (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
 
