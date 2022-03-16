@@ -837,12 +837,14 @@ Start and enable named:
 # systemctl enable --now named
 ```
 
-Use the configuration files in the support-files directory in this repository as a base for the configuraion.  Keep in mind that if these files are modified, the configuration in other parts of the deployment process will be affected
+Use the configuration files in the **support-files** directory in this repository as a base for the configuraion.  Keep in mind that if these files are modified, the configuration in other parts of the deployment process will be affected
 
+```
 /etc/named.conf
 /etc/named/tale.zones
 /var/named/tale.net.zone
 /var/named/tale.net.rzone
+```
 
 Change the owner of the last two files:
 ```

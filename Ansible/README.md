@@ -1,4 +1,4 @@
-# Set up the baremetal instance with Ansible
+# Set up the baremetal and Libvirt instances with Ansible
 
 ## Subscribe the host with Red Hat
 The host is subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
@@ -15,9 +15,9 @@ $ ansible-vault encrypt --vault-id vault-id secrets
 
 ## Add the ec2-user ssh key
 
-The playbook needs access to the private ssh key used to connect to the host as the user ec2-user.  Actually it is not the playbook itself but the environment which has access to the ssh private key.
+The playbook needs access to the private ssh key used to connect to the host as the user ec2-user.  Actually it is not the playbook itself but the shell environment which has access to the ssh private key.
 
-To make the ssh private key available add it to an ssh-agent by running the following commands:
+To make the ssh private key available to the shell, add it to an ssh-agent by running the following commands:
 
 ```
 $ ssh-agent bash
@@ -70,9 +70,9 @@ To try and minimize the chances of unnecessary reboots, the playbook pauses and 
     ]
 }
 
-TASK [pause] *********************************************************************************************************************************************************************************
+TASK [pause] 
 task path: /home/user1/OCP4baremetalIPI/Ansible/setup_metal.yaml:82
-Thursday 10 March 2022  09:30:28 +0100 (0:00:06.661)       0:04:01.275 ******** 
+Thursday 10 March 2022  09:30:28 +0100 (0:00:06.661)       0:04:01.275
 [pause]
 Operating System has been updated.  Reboot the host? (yes|no):
 [[ok: [54.243.59.185] => {
@@ -80,4 +80,43 @@ Operating System has been updated.  Reboot the host? (yes|no):
     ...
     "user_input": "yes"
 }
+```
+## Set up KVM instances
+
+A separate ansible playbook file (**support_setup.yaml**) is used to configure the KVM virtual machines created previously with terraform, in particular the provisioning and support VMs.  The cluster nodes will be set up by Openshift installation binary.
+
+This playbook shares many of the same tasks and requirements as the one defined in the file **setup_metal.yaml**:
+
+* An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
+* An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
+
+### Running the playbook for libvirt VMs
+
+The playbook is run with a command like the following, similar to the one used to set up the EC2 instance:
+
+```
+$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id 
+```
+
+### Running tasks in via a jumphost with ssh
+
+The KVM VMs are only reachable from the EC2 instance, as they are created by the terraform template in a private network which only allows NAT outbound access beyond the EC2 host to the VMs attached to it but the inbound access is only possible from the same EC2 host, so the are not directly reacheble from the controlling host where the ansible playbooks are run.
+
+To allow the playbook to run tasks in the KVM VMs the ssh's **ProxyJump** option is used (similar to the **-J** command line option).  With this option an ssh tunnel is created from the controlling host running ansible to the end controlled host (support) passing through the jump host specified in the option.
+
+To use this option with ansible, the ansible variable  **ansible_ssh_common_args** is defined for the host or group in the inventory file.  The options defined here will be added to the ssh command used to connect to the controlled host.
+
+In the following example the hosts in the support group, actually the support VM, with an IP in a private network, for example 192.168.30.3, will be reached by first stablishing an ssh connection to the EC2 instance (3.87.151.210) using the user **ec2-user**, from there the connection to the target host is made (192.168.30.3), since the user in the target host is root and not ec2-user, the variable **ansible_user** is also defined to specify the user that the ssh must use to connect to the target user.  
+
+The EC2 instance's IP address changes after every new execution of the terraform template so that section is dynamicaly added to the inventory file by a previous play in the same playbook.
+
+One important implicit part is that for both hosts: jump and target, the authentication is made with the same ssh key, which is added to the shell as explainend [here](#add-the-ec2-user-ssh-key)
+```
+[support:vars]
+ansible_ssh_common_args='-o ProxyJump="ec2-user@3.87.151.210"' 
+ansible_user=root
+```
+The resulting ssh command would be something like:
+```
+$ ssh -o 'User="root"' -o ProxyJump=ec2-user@3.87.151.210 192.168.30.3 
 ```

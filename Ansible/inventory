@@ -1,4 +1,14 @@
 [baremetal]
 # BEGIN ANSIBLE MANAGED BLOCK
-52.71.88.140
+3.87.151.210
 # END ANSIBLE MANAGED BLOCK
+[support]
+# BEGIN Ansible block for support
+192.168.30.3
+# END Ansible block for support
+
+[support:vars]
+# BEGIN Ansible block for support variables
+ansible_ssh_common_args='-o ProxyJump="ec2-user@3.87.151.210"' 
+# END Ansible block for support variables
+ansible_user=root

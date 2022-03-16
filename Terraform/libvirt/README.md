@@ -1,4 +1,4 @@
-# KVM based infrastructure
+# KVM based infrastructure with terraform
 
 This directory contains the terraform templates and support files required to deploy the KVM/libvirt based infrastructure components required to deploy the baremetal IPI OCP cluster.
 

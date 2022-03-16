@@ -1,0 +1,74 @@
+---
+- name: Local tasks
+  hosts: 127.0.0.1
+  connection: local
+  become: no
+  tasks:
+    - name: Remove stale entries from known_hosts file in the ansible host
+      command: ssh-keygen -R {{ item }}
+      with_items: "{{ groups['support'] }}"
+    - name: Save terraform variables to a file
+      shell: terraform output |tr '=' ':' > ../../Ansible/group_vars/all/support_terraform_outputs.var
+      args:
+        chdir: ../Terraform/libvirt/
+    - name: Load terraform output variables
+      include_vars:
+        dir: group_vars/all
+        extensions:
+          - 'data'
+          - 'var'
+    - name: Update support group in inventory file
+      blockinfile:
+        path: inventory
+        block: "{{ support_host_ip | regex_search('[^/]+') }}"
+        marker: "# {mark} Ansible block for support"
+        insertafter: "^\\[support\\]$"
+    - name: Update support vars in inventory file
+      blockinfile:
+        path: inventory
+        marker: "# {mark} Ansible block for support variables"
+        insertafter: "^\\[support:vars\\]$"
+        block: |
+           ansible_ssh_common_args='-o ProxyJump="ec2-user@{{ baremetal_public_ip }}"' 
+    - name: Reload inventory
+      meta: refresh_inventory
+
+- name: Set up support VM
+  hosts: support
+  gather_facts: no
+  tasks:
+    # It seems that using include_vars will limit the variable files to those explicitly mentioned here
+    - name: Load terraform output variables
+      include_vars:
+        dir: group_vars/all
+        extensions:
+          - 'data'
+          - 'var'
+    - name: Subscribe with Red Hat
+      redhat_subscription:
+        state: present
+        activationkey: "{{ subscription_activationkey }}"
+        org_id: "{{ subscription_org_id }}"
+    - name: Install required pacakges
+      dnf:
+        name: 
+          - bind
+          - bind-utils
+          - dhcp-server
+        state: present
+ 
+    - name: Update OS
+      dnf:
+        name: "*"
+        state: latest
+      register: _os_update
+    - pause:
+        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
+        echo: true
+      register: _reboot
+      when: _os_update.changed == True
+    - name: Reboot if OS updated
+      reboot:
+        reboot_timeout: 600
+      when: _reboot.user_input is defined and _reboot.user_input == "yes"
+
