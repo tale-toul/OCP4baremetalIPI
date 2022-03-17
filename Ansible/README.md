@@ -31,6 +31,8 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 $ cat ~/.ssh/upi-ssh.pub 
 ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote.csb
 ```
+## DNS and DHCP CONFIGURATION
+The configuration files for DNS and DHCP are static and can be found in the support-files directory.  Changing this files may affect the configuration of other parts and will probably break the setup and installation process.
 
 ## Running the playbook
 
@@ -95,7 +97,7 @@ This playbook shares many of the same tasks and requirements as the one defined 
 The playbook is run with a command like the following, similar to the one used to set up the EC2 instance:
 
 ```
-$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id 
+$ ansible-playbook -i inventory -vvv support_setup.yaml --vault-id vault-id 
 ```
 
 ### Running tasks in via a jumphost with ssh
@@ -119,4 +121,64 @@ ansible_user=root
 The resulting ssh command would be something like:
 ```
 $ ssh -o 'User="root"' -o ProxyJump=ec2-user@3.87.151.210 192.168.30.3 
+```
+An equivalent command to the one above is:
+```
+$ ssh -J ec2-user@3.219.143.250  root@192.168.30.3
+```
+
+### Setting up DNS and DHCP
+
+A group of tasks is dedicated to configure, enable and start the DNS and DHCP service in the supporting VM.
+
+The first two task copy the configuration files for DNS and DHCP, they use the synchronize module which calls the rsync command.  
+```
+- name: Copy DNS and DHCP configuration files 
+  synchronize:
+    src: ../support-files/etc/
+    dest: /etc
+    use_ssh_args: yes
+    owner: no
+    group: no
+- name: Copy DNS zone files 
+  synchronize:
+    src: ../support-files/var/
+    dest: /var
+    use_ssh_args: yes
+    owner: no
+    group: no
+```
+
+The rsync command will directly connect from the control host to the support host instead of using ssh as other tasks do, as a consequence the ssh tunnel through the EC2 jumphost created by other tasks is not available by default when using the synchronize module.  To solve this situation the option `use_ssh_args: yes` is used, which forces synchronize to add the ssh options defined in the vars section of the inventory file `ansible_ssh_common_args='-o ProxyJump="ec2-user@3.87.151.210"'` resulting in the following command that will make the correct ssh connection through the jump EC2 host:
+
+```
+/usr/bin/rsync --delay-updates -F --compress --archive --no-owner --no-group --rsh=/usr/bin/ssh -S none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -C -o ControlM
+aster=auto -o ControlPersist=60s -o ProxyJump=\"ec2-user@3.21.134.25\" --rsync-path=sudo rsync --out-format=<<CHANGED>>%i %n%L /home/user1/OCP4baremetalIPI/support-files/var/ root@192.168.30.3:/var"
+```
+The next two tasks change the owner and group of DNS zone files to named:named.  In order to do this, the first taks creates a list of the files to be changed.  This task is run in the control host from where the files were copied to the remote host in the previous tasks, and the list is saved in a variable.
+
+The next task uses a loop to change the owner and group of the files saved in the list, in the remote host.
+
+```
+- name: Get list of copied zones files
+  local_action: command ls -1 ../support-files/var/named
+  register: _zone_files
+  become: no
+- name: Change ownership of zone files
+  file:
+    path: /var/named/{{ item }}
+    owner: named
+    group: named
+  loop: "{{ _zone_files.stdout_lines }}"
+```
+The final task enables and starts the DHCP and DNS services:
+```
+- name: Enable and start DNS and DHCP services
+  service:
+    name: "{{ item }}"
+    state: started 
+    enabled: yes
+  loop: 
+    - named
+    - dhcpd
 ```
