@@ -153,3 +153,13 @@
       loop: "{{ master_names + worker_names }}"
       loop_control:
         index_var: x
+    - name: Enable access to the KVM Virtual Machines VNC displays
+      firewalld:
+        port: 590{{ x }}/tcp
+        zone: public
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop: "{{ master_names + worker_names }}"
+      loop_control:
+        index_var: x
