@@ -1,9 +1,9 @@
 # Set up the baremetal and Libvirt instances with Ansible
 
-## Subscribe the host with Red Hat
-The host is subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
+## Subscribe hosts with Red Hat
+The EC2 metal host and the support and provisioning VMs are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
 
-The data is stored in the file **group_vars/all/subscription.data**.  The variables defined in this file are called from the ansible playbook.
+The data is stored in the file **Ansible/group_vars/all/subscription.data**.  The variables defined in this file are called from the ansible playbook.
 ```
 subscription_activationkey: 1-234381329
 subscription_org_id: 19704701
@@ -13,9 +13,11 @@ It is a good idea to encrypt this file with ansible-vault, for example to encryp
 $ ansible-vault encrypt --vault-id vault-id secrets
 ```
 
-## Add the ec2-user ssh key
+## Add the common ssh key
 
-The playbook needs access to the private ssh key used to connect to the host as the user ec2-user.  Actually it is not the playbook itself but the shell environment which has access to the ssh private key.
+Ansible needs access to the private ssh key authorized to connect to the different hosts controlled by these playbooks.  Actually it is not the playbooks but the shell environment which has access to the ssh private key.
+
+To simplify things the same ssh key is authorized in all hosts being managed by the ansible playbooks in this respository.
 
 To make the ssh private key available to the shell, add it to an ssh-agent by running the following commands:
 
@@ -34,7 +36,7 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 ## DNS and DHCP CONFIGURATION
 The configuration files for DNS and DHCP are static and can be found in the support-files directory.  Changing this files may affect the configuration of other parts and will probably break the setup and installation process.
 
-## Running the playbook
+## Running the playbook to configure the metal EC2 instance
 
 Before running the playbook make sure the EC2 instance is fully initialized and accepting ssh connections, this may take a few minutes after creation.
 
@@ -45,7 +47,7 @@ Run the playbook with the following command:
 ```
 $ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id 
 ```
-## Rebooting the host after OS update
+###  Rebooting the host after OS update
 The playbook contains a task to update the Operating System, depending on what packages were updated, the kernel for example, the host may require a reboot.
 
 A full host reboot can take between 10 and 20 minutes to complete.
@@ -91,6 +93,17 @@ This playbook shares many of the same tasks and requirements as the one defined 
 
 * An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
 * An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
+* A user and password to connect to the VBMC service for every VM under its control.  In this case the same user and password is used for all VMs.  The playbook expects to get the user from the following variables, save them in a file with .data or .var extension for example **Ansible/group_vars/all/vbmc_credentials.data**:
+
+```
+vbmc_user: admin
+vbmc_password: ZexUKvat]ERU
+```
+
+     It is recommended to encrypt this file with ansible-vault: 
+```
+$ ansible-vault encrypt --vault-id vault-id vbmc_credentials.data
+```
 
 ### Running the playbook for libvirt VMs
 
