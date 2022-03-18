@@ -5,7 +5,7 @@
 * [Introduction](#introduction)
 * [Reference documentation](#reference-documentation)
 * [Preparing the Hypervisor](#preparing-the-hypervisor)
-* [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design)
+* [Provisioning Network Based Architecture](#provisioning-network-based-architecture)
   * [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm)
   * [Create the provisioning VM](#create-the-provisioning-vm) 
   * [Create the 3 empty master nodes](#create-the-3-empty-master-nodes)
@@ -52,7 +52,7 @@ The instruction given here are meant to deploy a test cluster and help understan
 
 Even in the scenario depicted here a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
 
-The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture Design](#provisioning-network-based-architecture-design) and [Redfish based architecture](#redfish-based-architecture) respectively 
+The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively 
 
 ## Reference documentation
 
@@ -73,7 +73,7 @@ Refer to the section [Setup the physical host in AWS](#setup-the-physical-host-i
 If a local server is going to be used, install and update the Operating System, register it with Red Hat (if using RHEL), and install the libvirt packages, check the section [Setup the physical host in AWS](#setup-the-physical-host-in-aws) for more details.
 
 
-## Provisioning Network Based Architecture Design
+## Provisioning Network Based Architecture
 
 The architecture design for this cluster is as follows:
 * Uses libvirt/KVM based virtual machines.
@@ -540,7 +540,7 @@ $ virsh -c qemu:///system pool-list --all --details
 
 Do this from a local terminal or the connection will be dropped half way through the configuration.
 
-Apply these instructions Even if a network connection is already active and working in the provisioning VM.
+Apply these instructions Even if a network connection is already active and working.
 ```
 # virsh console provision
 # nmcli con show

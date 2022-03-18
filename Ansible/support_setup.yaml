@@ -180,6 +180,11 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
+    - name: Add hashicorpt repo for terraform
+      get_url:
+        url: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+        dest: /etc/yum.repos.d/hashicorp.repo
+        mode: '0644'
     - name: Install required packages
       dnf:
         name:
@@ -188,6 +193,7 @@
           - python3-devel
           - jq
           - ipmitool
+          - terraform
         state: present
     - name: Add the user kni
       user:
@@ -219,6 +225,18 @@
         permanent: yes
         immediate: yes
         state: enabled
+    - name: Copy terraform template to create default storage pool in provisioning VM
+      synchronize:
+        src: ../Terraform/provision
+        dest: .
+        use_ssh_args: yes
+        owner: no
+        group: no
+    - name: Create default libvirt storage pool
+      terraform:
+        project_path: 'provision/'
+        state: present
+        force_init: yes
     - name: Update OS
       dnf:
         name: "*"
