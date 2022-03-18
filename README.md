@@ -540,7 +540,7 @@ $ virsh -c qemu:///system pool-list --all --details
 
 Do this from a local terminal or the connection will be dropped half way through the configuration.
 
-Even if a network connection is already active and working, follow the next steps:
+Apply these instructions Even if a network connection is already active and working in the provisioning VM.
 ```
 # virsh console provision
 # nmcli con show

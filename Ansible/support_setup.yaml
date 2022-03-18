@@ -49,9 +49,9 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
-    - name: Install required pacakges
+    - name: Install required packages
       dnf:
-        name: 
+        name:
           - bind
           - bind-utils
           - dhcp-server
@@ -163,3 +163,73 @@
       loop: "{{ master_names + worker_names }}"
       loop_control:
         index_var: x
+
+- name: Set up provision VM
+  hosts: provision
+  gather_facts: no
+  tasks:
+    # It seems that using include_vars will limit the variable files to those explicitly mentioned here
+    - name: Load terraform output variables
+      include_vars:
+        dir: group_vars/all
+        extensions:
+          - 'data'
+          - 'var'
+    - name: Subscribe with Red Hat
+      redhat_subscription:
+        state: present
+        activationkey: "{{ subscription_activationkey }}"
+        org_id: "{{ subscription_org_id }}"
+    - name: Install required packages
+      dnf:
+        name:
+          - '@virtualization-host-environment'
+          - mkisofs
+          - python3-devel
+          - jq
+          - ipmitool
+        state: present
+    - name: Add the user kni
+      user:
+        name: kni
+        groups: libvirt
+    - name: Authorize an ssh key for kni user
+      authorized_key:
+        user: kni
+        state: present
+        key: "{{ lookup('file', '../Terraform/'+ssh_certificate)  }}"
+    - name: Add sudo privileges to kni
+      lineinfile:
+        path: /etc/sudoers.d/kni
+        line: kni ALL=(root) NOPASSWD:ALL
+        create: yes
+        mode: 0440
+    - name: Enable and start firewalld and libvirtd services
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - firewalld
+        - libvirtd
+    - name: Enable http service in firewall
+      firewalld:
+        service: http
+        zone: public
+        permanent: yes
+        immediate: yes
+        state: enabled
+    - name: Update OS
+      dnf:
+        name: "*"
+        state: latest
+      register: _os_update
+    - pause:
+        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
+        echo: true
+      register: _reboot
+      when: _os_update.changed == True
+    - name: Reboot if OS updated
+      reboot:
+        reboot_timeout: 600
+      when: _reboot.user_input is defined and _reboot.user_input == "yes"
