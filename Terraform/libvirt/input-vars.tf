@@ -24,3 +24,9 @@ variable "support_net_config" {
     gateway = "192.168.30.1"
   }
 }
+
+variable "provision_ironiq_addr" {
+  description = "IP address for the network interface connected to the provisioning network in the provisioning VM"
+  type = string
+  default = "192.168.14.14"
+}

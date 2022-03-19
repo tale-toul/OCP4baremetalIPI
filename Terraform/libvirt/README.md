@@ -42,7 +42,7 @@ $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qco
 ```
 * Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
 
-* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.
+* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.  The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with the number of workers.
 
 * If this is a fresh deployment, delete any previous **terraform.tfstate** file that may be laying around from previous attempts.
 
@@ -73,21 +73,19 @@ Reference documentation and examples:
 
 The RHEL 8 base image is capable of running cloud init on first boot to configure some of the operating system parameters, and the libvirt terraform module supports the use of cloud init when creating a VM.
 
-Some template files containing the cloud init configuration are used.  Since they are templates, variables can be used to define values at rendering time.  These variables must be defined at the template file data definition block in terraform.
+Some template files containing the cloud init configuration are used.  Variables can be used to define values at rendering time.  These variables must be defined at the template file data definition block in terraform.
 
-At the moment both a password and a ssh key are enable for root user authentication, this is a temporary solution since initially the VM has no network configuration and cannot be accessed using ssh.  If the password configuration is to be left permanently, a variable must be used instead of a literal value, for security reasons: 
+Ssh key authentication is the only method enable for the root user authentication, no passwords are assigned so console access is blocked. 
+
+The support VM cloud init configuration assigns an static IP at initial configuration so this VM can be accessed via ssh immediately after creation, but the provisioning VM only gets an IP in the routable network when the DHCP service in the support VM is working, so the provisioning VM is not accessible just after creation.
 
 The ssh key injected in the VM is the same one used in the EC2 instance 
 
 ```
-$ cat cloud_init.cfg 
+$ cat provision_cloud_init.cfg 
 #cloud-config
 disable_root: False
-ssh_pwauth: True
-chpasswd:
-  list: |
-     root:mypassword
-  expire: False
+ssh_pwauth: False
 users:
   - name: root
     ssh_authorized_keys:
@@ -137,3 +135,5 @@ The result from applying the variables is something like:
   uri = "qemu+ssh://ec2-user@3.223.112.4/system?keyfile=../baremetal-ssh.pub"
 ```
 
+@#TO DO#@
+The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with a changing number of workers.
