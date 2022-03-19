@@ -17,7 +17,7 @@
   * [Preparing the provisioning node for OpenShift Container Platform installation](#preparing-the-provisioning-node-for-openshift-container-platform-installation)
   * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm)
   * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
-  * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
+  * [Create the install config yaml file](#create-the-install-config-yaml-file)
   * [Install the Openshift cluster with BMC](#install-the-openshift-cluster-with-bmc) 
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
@@ -36,7 +36,7 @@
   * [Create the provisioning VM](#create-the-provisioning-vm)
   * [Create the empty cluster hosts](#create-the-empty-cluster-hosts) 
   * [Prepare the provision VM](#prepare-the-provision-vm) 
-  * [Create the install-config.yaml file](#create-the-install-config.yaml-file)
+  * [Create the install configuration yaml file](#create-the-install-configuration-yaml-file)
   * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
@@ -538,7 +538,8 @@ $ virsh -c qemu:///system pool-list --all --details
 
 ### Configure networking in the provisioning VM
 
-Do this from a local terminal or the connection will be dropped half way through the configuration.
+The following network configuration allows the bootstrap VM created as a nested virtual machine inside the provisioning host to be reachable from outside the provisioning host.  The bootstrap VM is connected to the provisioning bridges (chucky and provision) directly which allows it to get IPs in the external networks and therefore be accessible from outside the provisioning VM
+Do this from a local terminal or the connection will be dropped half way through the configuration process.
 
 Apply these instructions Even if a network connection is already active and working.
 ```
@@ -610,12 +611,12 @@ $ ip -4 a
 
 ### Get the pull secret Openshift installer and oc client
 
-Get a pull secret from [Red Hat](https://console.redhat.com/openshift/install/metal/user-provisioned), and paste it into a file in the kni user home directory.
+In the provisioning VM, as the kni user, get a pull secret from [Red Hat](https://console.redhat.com/openshift/install/metal/user-provisioned), and paste it into a file in the kni user home directory.
 ```
 $ vim pull-secret.txt
 ```
 
-Download the Openshift client and installer.  
+Download the Openshift client and installer.  The version to be installed can be any of the version numbers defined as directory names at [https://mirror.openshift.com/pub/openshift-v4/clients/ocp/](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/).  To use the latest stable version for a particular minor version use the directory name `stable-<minor version`, in the following example the latest 4.9 version is used.
 ```
 $ export VERSION=stable-4.9
 $ export RELEASE_IMAGE=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/release.txt | grep 'Pull From: quay.io' | awk -F ' ' '{print $3}')
@@ -628,11 +629,13 @@ $ sudo cp oc /usr/local/bin
 $ oc adm release extract --registry-config "${pullsecret_file}" --command=$cmd --to "${extract_dir}" ${RELEASE_IMAGE}
 ```
 
-### Create the install-config.yaml file
+### Create the install config yaml file
 
-The provided install-config.yaml file in this repository at provisioning/install-config.yaml contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and MAC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
+The provided install-config.yaml file in this repository at **provisioning/install-config.yaml** contains a mostly functional template for installing the Openshift 4 cluste.  In particular, the IP addresses and networks, ports and MAC addresses match those used in other parts of this documentation.  The cluster name and DNS domain also match the ones used in the section [Creating the support VM ](#creating-the-support-vm)
 
-Review the install-config.yaml file provided, add at the end of the file the pull secret downloaded in the previous section, and an ssh public key, the one created for the kni user earlier for example.
+Review the install-config.yaml file provided and add the pull secret downloaded in the previous section and an ssh public key, the one created for the kni user earlier for example, at the end of the file.
+
+Check the [reference documentation](https://docs.openshift.com/container-platform/4.9/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#configuring-the-install-config-file_ipi-install-installation-workflow) for details.
 
 ### Install the Openshift cluster with BMC
 
@@ -1251,7 +1254,7 @@ Follow the instructions in sections:
 * [Configure networking in the provisioning VM](#configure-networking-in-the-provisioning-vm). Apply only the parts referring to the baremetal network.
 * [Get the pull secret, Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
  
-### Create the install-config.yaml file
+### Create the install configuration yaml file
 
 Use the install-config.yaml file provided in this repository at **redfish/install-config.yaml** as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. match other configurations options defined in other parts of this document, and changing them in this file without updating those other configurations will break the deployment process.
 

@@ -94,15 +94,10 @@
         name: "*"
         state: latest
       register: _os_update
-    - pause:
-        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
-        echo: true
-      register: _reboot
-      when: _os_update.changed == True
     - name: Reboot if OS updated
       reboot:
         reboot_timeout: 600
-      when: _reboot.user_input is defined and _reboot.user_input == "yes"
+      when: _os_update.changed == True
 
 - name: Set up VBMC
   hosts: baremetal
@@ -242,12 +237,7 @@
         name: "*"
         state: latest
       register: _os_update
-    - pause:
-        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
-        echo: true
-      register: _reboot
-      when: _os_update.changed == True
     - name: Reboot if OS updated
       reboot:
         reboot_timeout: 600
-      when: _reboot.user_input is defined and _reboot.user_input == "yes"
+      when: _os_update.changed == True

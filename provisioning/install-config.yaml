@@ -20,6 +20,7 @@ platform:
     ingressVIP: 192.168.30.110
     provisioningDHCPRange: 192.168.14.20,192.168.14.100
     provisioningBridge: provision
+    externalBridge: chucky
     provisioningNetworkCIDR: 192.168.14.0/24
     hosts:
       - name: bmipi-master1
@@ -67,5 +68,5 @@ platform:
           password: secreto
         bootMACAddress: 52:54:00:74:dc:d2
         hardwareProfile: libvirt
-pullSecret: ...
+pullSecret: '...'
 sshKey: |
