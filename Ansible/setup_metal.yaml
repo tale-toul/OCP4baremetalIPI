@@ -87,17 +87,15 @@
         name: firewalld
         state: started
         enabled: yes
-    - name: Update OS
-      dnf:
-        name: "*"
-        state: latest
-      register: _os_update
-    - pause:
-        prompt: "Operating System has been updated.  Reboot the host? (yes|no) [Reboot may take between 10 and 20 minutes to complete]"
-        echo: true
-      register: _reboot
-      when: _os_update.changed == True
-    - name: Reboot if OS updated
-      reboot:
-        reboot_timeout: 1300
-      when: _reboot.user_input is defined and _reboot.user_input == "yes"
+    - name: Update OS and reboot host
+      block:
+        - name: Update OS
+          dnf:
+            name: "*"
+            state: latest
+          register: _os_update
+        - name: Reboot if OS updated
+          reboot:
+            reboot_timeout: 1300
+          when: _os_update.changed == True
+      when: update_OS|bool

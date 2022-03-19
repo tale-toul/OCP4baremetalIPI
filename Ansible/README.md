@@ -42,10 +42,12 @@ Before running the playbook make sure the EC2 instance is fully initialized and 
 
 ![Metal instance ready](../images/ec2-ready.png)
 
+The playbook will by default update the operating system and reboot the EC2 instance if any package was updated.  Rebooting the EC2 instance may take between 10 and 20 minutes.  To disable the OS update and instance reboot define the variable **update_OS** to false, this can be done by editing the file **Ansible/group_vars/all/general.var** and changing the default value or by adding the variable definition in the command line as in the example bellow.
+
 Run the playbook with the following command:
 
 ```
-$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id 
+$ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id -e update_OS=false
 ```
 ###  Rebooting the host after OS update
 The playbook contains a task to update the Operating System, depending on what packages were updated, the kernel for example, the host may require a reboot.
