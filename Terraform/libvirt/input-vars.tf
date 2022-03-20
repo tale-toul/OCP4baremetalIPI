@@ -5,6 +5,30 @@ variable "rhel8_image_location" {
   default = "rhel8.qcow2"
 }
 
+variable "provision_resources" {
+  description = "Ammount of CPU and memory resources assigned to the provisioning VM"
+  type = object({
+    memory = string
+    vcpu = number
+  })
+  default = {
+    memory = "24576"
+    vcpu = 4
+  }
+}
+
+variable "support_resources" {
+  description = "Ammount of CPU and memory resources assigned to the support VM"
+  type = object({
+    memory = string
+    vcpu = number
+  })
+  default = {
+    memory = "24576"
+    vcpu = 4
+  }
+}
+
 variable "number_of_workers" {
   description = "How many worker VMs to create"
   type = number

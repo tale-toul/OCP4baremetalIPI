@@ -44,11 +44,14 @@ $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qco
 
 * The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.  The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with the number of workers.
 
+* The variables **provision_resources** and **support_resources** contain the ammount of memory and virtual CPUS that the provision and support VMs will have.  Review its default values in the file **Terraform/libvirt/input-vars.tf** and adapt accordingly.
+
 * If this is a fresh deployment, delete any previous **terraform.tfstate** file that may be laying around from previous attempts.
 
 * Use a command like the following to deploy the infrastructure.  In this case a non default location for the base RHEL 8 image has been specified:
 ```
-$ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2" -var="number_of_workers=2"
+$ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2" -var="number_of_workers=2" \
+  -var='provision_resources={"memory":"32768","vcpu":6}' -var='support_resources={"memory":"32768","vcpu":6}'
 ```
 
 ## Created resources

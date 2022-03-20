@@ -20,4 +20,3 @@ worker1.ocp4              IN            A           192.168.30.31
 api.ocp4                  IN            A           192.168.30.100
 api-int.ocp4              IN            A           192.168.30.101
 *.apps.ocp4               IN            A           192.168.30.110
-

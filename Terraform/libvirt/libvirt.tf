@@ -94,8 +94,8 @@ resource "libvirt_domain" "provision_domain" {
   running = true
   autostart = false
 
-  memory = "24096"
-  vcpu   = 4
+  memory = var.provision_resources.memory
+  vcpu   = var.provision_resources.vcpu
   cloudinit = libvirt_cloudinit_disk.provision_cloudinit.id
 
   disk {
@@ -274,8 +274,8 @@ resource "libvirt_domain" "support_domain" {
   running = true
   autostart = false
 
-  memory = "8192"
-  vcpu   = 4
+  memory = var.support_resources.memory
+  vcpu   = var.support_resources.vcpu
   cloudinit = libvirt_cloudinit_disk.support_cloudinit.id
 
   disk {
