@@ -232,6 +232,13 @@
         project_path: 'provision/'
         state: present
         force_init: yes
+    - name: Render install-config template
+      template:
+        src: install-config.j2
+        dest: /home/kni/install-config.yaml
+        owner: kni
+        group: kni
+        mode: 0644
     - name: Update OS
       dnf:
         name: "*"

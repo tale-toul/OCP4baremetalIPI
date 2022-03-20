@@ -10,11 +10,11 @@ dhns                 IN         A           192.168.30.3
 provision            IN         A           192.168.30.10
 
 
-master1.ocp4              IN            A           192.168.30.20
-master2.ocp4              IN            A           192.168.30.21
-master3.ocp4              IN            A           192.168.30.22
-worker1.ocp4              IN            A           192.168.30.30
-worker2.ocp4              IN            A           192.168.30.31
+master0.ocp4              IN            A           192.168.30.20
+master1.ocp4              IN            A           192.168.30.21
+master2.ocp4              IN            A           192.168.30.22
+worker0.ocp4              IN            A           192.168.30.30
+worker1.ocp4              IN            A           192.168.30.31
 
 
 api.ocp4                  IN            A           192.168.30.100
