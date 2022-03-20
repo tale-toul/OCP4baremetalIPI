@@ -213,7 +213,7 @@ data "aws_ami" "rhel8" {
 #Baremetal host
 resource "aws_instance" "baremetal" {
   ami = data.aws_ami.rhel8.id
-  instance_type = "c5n.metal"
+  instance_type = var.instance_type
   subnet_id = aws_subnet.subnet_pub.id
   vpc_security_group_ids = [aws_security_group.sg-ssh-in.id,aws_security_group.sg-web-in.id,aws_security_group.sg-vnc-in.id,aws_security_group.sg-all-out.id,aws_security_group.sg-api-in.id]
   key_name= aws_key_pair.ssh-key.key_name

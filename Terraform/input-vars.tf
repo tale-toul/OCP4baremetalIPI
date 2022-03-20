@@ -23,6 +23,12 @@ variable "ssh-keyfile" {
   default = "ssh.pub"
 }
 
+variable "instance_type" {
+  description = "AWS instance type for the hypervisor machine"
+  type = string
+  default = "c5n.metal"
+}
+
 #LOCALS
 locals {
 #Fixed short random string

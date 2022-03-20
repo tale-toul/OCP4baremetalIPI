@@ -2,7 +2,7 @@
 
 ## Create the AWS metal instance
 
-The terraform template in this directory creates a c5n.metal instance in AWS to be used as a base to deploy a baremetal OCP 4 cluster using KVM/libvirt.
+The terraform template in this directory creates a metal instance in AWS to be used as a base to deploy a baremetal OCP 4 cluster using KVM/libvirt.
 
 The elements created are:
 
@@ -21,9 +21,11 @@ The terraform template requires a public ssh key file in the Terraform directory
 
 The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is **us-east-1** (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
 
+The type of AWS instance created is defined with the variable **instance_type**, by default the instance type created is **c5n.metal**.  If the variable is defined with a different value, it must be a metal type instance for example g4dn.metal
+
 Apply the template to create the infrastructure with a command like:
 ```
-$ terraform apply -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh"
+$ terraform apply -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
 ```
 If the terraform variables are used with non default values, keep a copy of the command so the same values are used to destroy the infrastructure:
 ```
