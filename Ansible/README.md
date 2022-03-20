@@ -33,16 +33,15 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 $ cat ~/.ssh/upi-ssh.pub 
 ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote.csb
 ```
-## DNS and DHCP CONFIGURATION
-The configuration files for DNS and DHCP are static and can be found in the support-files directory.  Changing this files may affect the configuration of other parts and will probably break the setup and installation process.
-
 ## Running the playbook to configure the metal EC2 instance
 
 Before running the playbook make sure the EC2 instance is fully initialized and accepting ssh connections, this may take a few minutes after creation.
 
 ![Metal instance ready](../images/ec2-ready.png)
 
-The playbook will by default update the operating system and reboot the EC2 instance if any package was updated.  Rebooting the EC2 instance may take between 10 and 20 minutes.  To disable the OS update and instance reboot define the variable **update_OS** to false, this can be done by editing the file **Ansible/group_vars/all/general.var** and changing the default value or by adding the variable definition in the command line as in the example bellow.
+The playbook by default updates the operating system and reboots the EC2 instance if any package is updated.  Rebooting the EC2 instance may take between 10 and 20 minutes.  
+
+To disable the OS update and instance reboot set the variable **update_OS** to false as in the example bellow.  This variable is defined in the file **Ansible/group_vars/all/general.var**. 
 
 Run the playbook with the following command:
 
@@ -96,6 +95,7 @@ This playbook shares many of the same tasks and requirements as the one defined 
 * An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
 * An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
 * A user and password to connect to the VBMC service for every VM under its control.  In this case the same user and password is used for all VMs.  The playbook expects to get the user from the following variables, save them in a file with .data or .var extension for example **Ansible/group_vars/all/vbmc_credentials.data**:
+* A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) to get the Openshift components required for installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  That is the path and name that the playbok will use look for the file.
 
 ```
 vbmc_user: admin
@@ -143,6 +143,8 @@ $ ssh -J ec2-user@3.219.143.250  root@192.168.30.3
 ```
 
 ### Setting up DNS and DHCP
+
+The configuration files for DNS and DHCP are static and can be found in the support-files directory.  Changing this files may affect the configuration of other parts and will probably break the setup and installation process.
 
 A group of tasks is dedicated to configure, enable and start the DNS and DHCP service in the supporting VM.
 

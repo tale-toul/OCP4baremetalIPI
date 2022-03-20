@@ -13,3 +13,8 @@ output "worker_names" {
   value     = libvirt_domain.worker_domains[*].name
   description = "List of worker node names"
 }
+
+output "number_of_workers" {
+  value     = var.number_of_workers
+  description = "How many worker nodes have been created"
+}

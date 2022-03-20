@@ -45,6 +45,6 @@ platform:
         bootMACAddress: 52:54:00:74:dc:d{{ loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}
-pullSecret: '...'
+pullSecret: '{{ lookup('file', 'pull-secret')  }}'
 sshKey: |
   {{ lookup('file', '../Terraform/'+ssh_certificate)  }}

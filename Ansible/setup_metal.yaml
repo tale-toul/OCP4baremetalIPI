@@ -37,7 +37,7 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
-    
+#Create and setup the partition for the default libvirt storage pool
     - name: Create a primary partition in nvme1n1
       parted:
         device: /dev/nvme1n1
@@ -60,6 +60,7 @@
         mode: '0751' 
     - name: Apply new SELinux file context to filesystem
       command: restorecon -R -Fv /var/lib/libvirt/images/
+
     - name: Install required packages
       dnf:
         name: 

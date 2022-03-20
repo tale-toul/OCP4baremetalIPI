@@ -56,7 +56,7 @@
           - bind-utils
           - dhcp-server
         state: present
-
+#Set up DNS and DHCP services
     - name: Copy DNS and DHCP configuration files
       synchronize:
         src: ../support-files/etc/
@@ -89,6 +89,7 @@
       loop:
         - named
         - dhcpd
+
     - name: Update OS
       dnf:
         name: "*"
@@ -98,7 +99,7 @@
       reboot:
         reboot_timeout: 600
       when: _os_update.changed == True
-
+#Set up virtual BMC
 - name: Set up VBMC
   hosts: baremetal
   gather_facts: no
@@ -148,6 +149,7 @@
       loop: "{{ master_names + worker_names }}"
       loop_control:
         index_var: x
+
     - name: Enable access to the KVM Virtual Machines VNC displays
       firewalld:
         port: 590{{ x }}/tcp
@@ -155,7 +157,8 @@
         permanent: yes
         immediate: yes
         state: enabled
-      loop: "{{ master_names + worker_names }}"
+      # 3 masters + 2 (support and provisioning) + workers
+      loop: "{{ range(0, 3 + 2 + number_of_workers)|list}}"
       loop_control:
         index_var: x
 
