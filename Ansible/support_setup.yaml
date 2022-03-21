@@ -178,6 +178,8 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
+      retries: 14
+      delay: 15
     - name: Add hashicorpt repo for terraform
       get_url:
         url: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo

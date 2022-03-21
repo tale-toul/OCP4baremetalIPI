@@ -35,22 +35,29 @@ variable "number_of_workers" {
   default = 3
 }
 
-variable "support_net_config" {
-  description = "Network configuration parameters for the support VM"
-  type = object({
-    address = string 
-    nameserver = string
-    gateway = string
-  })
-  default = {
-    address = "192.168.30.3/24"
-    nameserver = "8.8.8.8"
-    gateway = "192.168.30.1"
-  }
+variable "chucky_net_addr" {
+  description = "Network address for the routable chucky network"
+  type = string
+  default = "192.168.30.0/24"
 }
 
-variable "provision_ironiq_addr" {
-  description = "IP address for the network interface connected to the provisioning network in the provisioning VM"
+variable "provision_net_addr" {
+  description = "Network address for the private provision network"
   type = string
-  default = "192.168.14.14"
+  default = "192.168.14.0/24"
+}
+
+variable "support_net_config_nameserver" {
+  description = "DNS server IP for the support VM's network configuration"
+  type = string
+  default = "8.8.8.8"
+}
+
+
+locals {
+  #Last octect of the IP address for the network interface connected to the provisioning network in the provisioning VM
+  provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
+
+  support_net_config_address = replace(var.chucky_net_addr,".0/",".3/")
+  support_net_config_gateway = replace(var.chucky_net_addr,".0/24",".1")
 }

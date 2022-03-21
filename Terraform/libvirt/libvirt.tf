@@ -28,7 +28,7 @@ resource "libvirt_pool" "pool_default" {
 resource "libvirt_network" "chucky" {
   name = "chucky"
   mode = "nat"
-  addresses = ["192.168.30.0/24"]
+  addresses = [var.chucky_net_addr]
   bridge = "chucky"
   autostart = true
 
@@ -40,7 +40,7 @@ resource "libvirt_network" "chucky" {
 resource "libvirt_network" "provision" {
   name = "provision"
   mode = "none"
-  addresses = ["192.168.14.0/24"]
+  addresses = [var.provision_net_addr]
   bridge = "provision"
   autostart = true
 
@@ -77,7 +77,7 @@ data "template_file" "net_config" {
   template = file ("${path.module}/provision_network_config.cfg")
 
   vars = {
-    ironiq_addr = var.provision_ironiq_addr
+    ironiq_addr = local.provision_ironiq_addr
   }
 }
 
@@ -255,9 +255,9 @@ data "template_file" "support_net_config" {
   template = file ("${path.module}/support_network_config.cfg")
 
   vars = {
-    address = var.support_net_config.address
-    nameserver = var.support_net_config.nameserver
-    gateway = var.support_net_config.gateway
+    address = local.support_net_config_address
+    nameserver = var.support_net_config_nameserver
+    gateway = local.support_net_config_gateway
   }
 }
 
