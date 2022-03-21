@@ -55,9 +55,18 @@ variable "support_net_config_nameserver" {
 
 
 locals {
-  #Last octect of the IP address for the network interface connected to the provisioning network in the provisioning VM
+  #IP address for the network interface connected to the provisioning network in the provisioning VM
   provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
-
+  #IP address for the support VM
   support_net_config_address = replace(var.chucky_net_addr,".0/",".3/")
-  support_net_config_gateway = replace(var.chucky_net_addr,".0/24",".1")
+  #Gateway IP for the routable chucky network
+  chucky_gateway = replace(var.chucky_net_addr,".0/24",".1")
+  #IP address for the OCP API VIP, in routable chucky network
+  api_vip = replace(var.chucky_net_addr,".0/24",".100")
+  #IP address for the OCP ingress VIP, in routable chucky network
+  ingress_vip = replace(var.chucky_net_addr,".0/24",".110")
+  #Start of the provisioning networkk DHCP Range
+  provisioning_dhcp_start = replace(var.provision_net_addr,".0/24",".20")
+  #End of the provisioning networkk DHCP Range
+  provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
 }

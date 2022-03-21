@@ -257,7 +257,7 @@ data "template_file" "support_net_config" {
   vars = {
     address = local.support_net_config_address
     nameserver = var.support_net_config_nameserver
-    gateway = local.support_net_config_gateway
+    gateway = local.chucky_gateway
   }
 }
 

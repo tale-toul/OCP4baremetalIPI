@@ -4,7 +4,7 @@ metadata:
   name: ocp4
 networking:
   machineNetwork:
-  - cidr: 192.168.30.0/24
+  - cidr: {{ chucky_net_addr }}
   networkType: OVNKubernetes
 compute:
 - name: worker
@@ -16,18 +16,18 @@ controlPlane:
         baremetal: {}
 platform:
   baremetal:
-    apiVIP: 192.168.30.100
-    ingressVIP: 192.168.30.110
-    provisioningDHCPRange: 192.168.14.20,192.168.14.100
+    apiVIP: {{ api_vip }}
+    ingressVIP: {{ ingress_vip }}
+    provisioningDHCPRange: {{ provisioning_dhcp_start }},{{ provisioning_dhcp_end }}
     provisioningBridge: provision
     externalBridge: chucky
-    provisioningNetworkCIDR: 192.168.14.0/24
+    provisioningNetworkCIDR: {{ provision_net_addr }}
     hosts:
 {% for item in master_names  %}
       - name: {{ item }}
         role: master
         bmc:
-          address: ipmi://192.168.30.1:700{{ loop.index0 }}
+          address: ipmi://{{ chucky_gateway }}:700{{ loop.index0 }}
           disableCertificateVerification: true
           username: {{ vbmc_user }}
           password: {{ vbmc_password }}
@@ -38,7 +38,7 @@ platform:
       - name: {{ item }}
         role: worker
         bmc:
-          address: ipmi://192.168.30.1:700{{ loop.index0 +3 }}
+          address: ipmi://{{ chucky_gateway }}:700{{ loop.index0 +3 }}
           disableCertificateVerification: true
           username: {{ vbmc_user }}
           password: {{ vbmc_password }}
