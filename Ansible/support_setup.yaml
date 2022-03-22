@@ -20,7 +20,7 @@
     - name: Update support group in inventory file
       blockinfile:
         path: inventory
-        block: "{{ support_host_ip | regex_search('[^/]+') }}"
+        block: "{{ support_host_ip }}"
         marker: "# {mark} Ansible block for support"
         insertafter: "^\\[support\\]$"
     - name: Update support vars in inventory file

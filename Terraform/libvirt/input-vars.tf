@@ -66,6 +66,7 @@ variable "cluster_name" {
 }
 
 #MAC ADDRESSES
+#The letters in the MACs should be in lowercase
 variable "provision_mac" {
   description = "MAC address for provision VM NIC"
   type = string
@@ -102,7 +103,7 @@ locals {
   #IP address for the network interface connected to the provisioning network in the provisioning VM
   provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
   #IP address for the support VM in the chucky network
-  support_net_config_address = replace(var.chucky_net_addr,".0/",".3/")
+  support_host_ip =            replace(var.chucky_net_addr,".0/24",".3")
   #Gateway IP for the routable chucky network
   chucky_gateway = replace(var.chucky_net_addr,".0/24",".1")
   #IP address for the OCP API VIP, in routable chucky network

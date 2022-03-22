@@ -255,7 +255,7 @@ data "template_file" "support_net_config" {
   template = file ("${path.module}/support_network_config.cfg")
 
   vars = {
-    address = local.support_net_config_address
+    address = "${local.support_host_ip}/24"
     nameserver = var.support_net_config_nameserver
     gateway = local.chucky_gateway
   }

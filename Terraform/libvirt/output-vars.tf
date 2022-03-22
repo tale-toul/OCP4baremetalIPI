@@ -40,7 +40,7 @@ output "master_chucky_mac_base" {
 }
 
 output "support_host_ip" {  
- value       = local.support_net_config_address
+ value       = local.support_host_ip
  description = "The support host IP address"
 }
 
