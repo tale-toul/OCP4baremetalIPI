@@ -8,7 +8,7 @@ networking:
   networkType: OVNKubernetes
 compute:
 - name: worker
-  replicas: 2
+  replicas: 3
 controlPlane:
   name: master
   replicas: 3
@@ -23,6 +23,15 @@ platform:
     externalBridge: chucky
     provisioningNetworkCIDR: 192.168.14.0/24
     hosts:
+      - name: bmipi-master0
+        role: master
+        bmc:
+          address: ipmi://192.168.30.1:7000
+          disableCertificateVerification: true
+          username: admin
+          password: secreto
+        bootMACAddress: 52:54:00:74:dc:a0
+        hardwareProfile: libvirt
       - name: bmipi-master1
         role: master
         bmc:
@@ -41,19 +50,19 @@ platform:
           password: secreto
         bootMACAddress: 52:54:00:74:dc:a2
         hardwareProfile: libvirt
-      - name: bmipi-master3
-        role: master
+      - name: bmipi-worker0
+        role: worker
         bmc:
           address: ipmi://192.168.30.1:7003
           disableCertificateVerification: true
           username: admin
           password: secreto
-        bootMACAddress: 52:54:00:74:dc:a3
+        bootMACAddress: 52:54:00:74:dc:d0
         hardwareProfile: libvirt
       - name: bmipi-worker1
         role: worker
         bmc:
-          address: ipmi://192.168.30.1:7011
+          address: ipmi://192.168.30.1:7004
           disableCertificateVerification: true
           username: admin
           password: secreto
@@ -62,7 +71,7 @@ platform:
       - name: bmipi-worker2
         role: worker
         bmc:
-          address: ipmi://192.168.30.1:7012
+          address: ipmi://192.168.30.1:7005
           disableCertificateVerification: true
           username: admin
           password: secreto

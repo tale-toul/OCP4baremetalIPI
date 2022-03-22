@@ -9,14 +9,13 @@ $TTL 1D
 dhns                 IN         A           192.168.30.3
 provision            IN         A           192.168.30.10
 
+master0.ocp4          IN            A          192.168.30.20
+master1.ocp4          IN            A          192.168.30.21
+master2.ocp4          IN            A          192.168.30.22
+worker0.ocp4          IN            A          192.168.30.30
+worker1.ocp4          IN            A          192.168.30.31
+worker2.ocp4          IN            A          192.168.30.32
 
-master0.ocp4              IN            A           192.168.30.20
-master1.ocp4              IN            A           192.168.30.21
-master2.ocp4              IN            A           192.168.30.22
-worker0.ocp4              IN            A           192.168.30.30
-worker1.ocp4              IN            A           192.168.30.31
-
-
-api.ocp4                  IN            A           192.168.30.100
-api-int.ocp4              IN            A           192.168.30.101
-*.apps.ocp4               IN            A           192.168.30.110
+api.ocp4                  IN            A          192.168.30.100
+api-int.ocp4              IN            A          192.168.30.101
+*.apps.ocp4               IN            A          192.168.30.110

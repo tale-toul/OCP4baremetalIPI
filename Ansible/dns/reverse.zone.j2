@@ -9,10 +9,10 @@ $TTL        86400
 3               IN  PTR         dhns.{{ dns_zone }}.
 10              IN  PTR         provision.{{ dns_zone }}.
 {% for item in master_names  %}
-{{ 20 + loop.index0 }}  IN  PTR   master{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.  
+{{ 20 + loop.index0 }}  IN  PTR   master{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.
 {% endfor %}
 {% for item in worker_names  %}
-{{ 30 + loop.index0 }}  IN  PTR   worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.  
+{{ 30 + loop.index0 }}  IN  PTR   worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.
 {% endfor %}
 
 100             IN  PTR         api.{{ cluster_name }}.{{ dns_zone }}.
