@@ -47,6 +47,9 @@
     - name: Wait for support VM connection to become available
       wait_for_connection:
         timeout: 300
+    - name: Assing a FQDN name to the support VM
+      hostname:
+          name: "support.{{ dns_zone }}"
     - name: Subscribe with Red Hat
       redhat_subscription:
         state: present

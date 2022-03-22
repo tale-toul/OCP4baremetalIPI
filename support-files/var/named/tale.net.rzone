@@ -5,8 +5,8 @@ $TTL        86400
         14400          ; retry
         3600000        ; expire
         86400 )        ; minimum
-                IN  NS          dhns.tale.net.
-3               IN  PTR         dhns.tale.net.
+                IN  NS          support.tale.net.
+3               IN  PTR         support.tale.net.
 10              IN  PTR         provision.tale.net.
 20  IN  PTR   master0.ocp4.tale.net.
 21  IN  PTR   master1.ocp4.tale.net.

@@ -5,8 +5,8 @@ $TTL 1D
                                             1H          ; retry
                                             1W          ; expire
                                             3H )        ; minimum
-                     IN         NS          dhns.tale.net.
-dhns                 IN         A           192.168.30.3
+                     IN         NS          support.tale.net.
+support              IN         A           192.168.30.3
 provision            IN         A           192.168.30.10
 
 master0.ocp4          IN            A          192.168.30.20
