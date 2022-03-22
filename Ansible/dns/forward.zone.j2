@@ -1,0 +1,21 @@
+$TTL 1D
+@           IN SOA   {{ dns_zone }}. root.{{ dns_zone }}. (
+                                            0           ; serial
+                                            1D          ; refresh
+                                            1H          ; retry
+                                            1W          ; expire
+                                            3H )        ; minimum
+                     IN         NS          dhns.{{ dns_zone }}.
+dhns                 IN         A           {{ chucky_short_net }}.3
+provision            IN         A           {{ chucky_short_net }}.10
+
+{% for item in master_names  %}
+master{{ loop.index0 }}.{{ cluster_name }}          IN            A          {{ chucky_short_net }}.{{ 20 + loop.index0 }}
+{% endfor %}
+{% for item in worker_names  %}
+worker{{ loop.index0 }}.{{ cluster_name }}          IN            A          {{ chucky_short_net }}.{{ 30 + loop.index0 }}
+{% endfor %}
+
+api.{{ cluster_name }}                  IN            A          {{ chucky_short_net }}.100
+api-int.{{ cluster_name }}              IN            A          {{ chucky_short_net }}.101
+*.apps.{{ cluster_name }}               IN            A          {{ chucky_short_net }}.110

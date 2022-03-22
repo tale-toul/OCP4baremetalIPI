@@ -4,9 +4,39 @@ output "chucky_net_addr" {
   description = "Network address for the routable chucky network"
 }
 
+output "chucky_short_net" {
+  value       = local.chucky_short_net
+  description = "Short version of the chucky net address space"
+}
+
+output "worker_provision_mac_base" {
+  value       = var.worker_provision_mac_base
+  description = "MAC address common part for the worker NICs in the provisioning network"
+}
+
+output "worker_chucky_mac_base" {
+  value       = var.worker_chucky_mac_base
+  description = "MAC address common part for the worker NICs in the chucky network"
+}
+
 output "provision_net_addr" {
   value       = var.provision_net_addr
   description = "Network address for the private provision network"
+}
+
+output "provision_mac" {
+  value       = var.provision_mac
+  description = "MAC address for provision VM NIC"
+}
+
+output "master_provision_mac_base" {
+  value       = var.master_provision_mac_base
+  description = "MAC address common part for the master NICs in the provisioning network"
+}
+
+output "master_chucky_mac_base" {
+  value       = var.master_chucky_mac_base
+  description = "MAC address common part for the master NICs in the chucky network"
 }
 
 output "support_host_ip" {  
@@ -52,4 +82,19 @@ output "worker_names" {
 output "number_of_workers" {
   value     = var.number_of_workers
   description = "How many worker nodes have been created"
+}
+
+output "dns_zone" {
+  value     = var.dns_zone
+  description = "DNS base zone for the Openshift cluster"
+}
+
+output "dns_backzone_filename" {
+  value     = local.dns_backzone_filename
+  description = "DNS reverse zone filename"
+}
+
+output "cluster_name" {
+  value = var.cluster_name
+  description = "Cluster name which is part of the DNS domain"
 }

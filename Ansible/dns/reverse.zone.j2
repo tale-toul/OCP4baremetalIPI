@@ -1,0 +1,20 @@
+$TTL        86400
+@           IN          SOA         {{ dns_zone }}. root.{{ dns_zone }}.  (
+        202202023 ; serial
+        28800          ; refresh
+        14400          ; retry
+        3600000        ; expire
+        86400 )        ; minimum
+                IN  NS          dhns.{{ dns_zone }}.
+3               IN  PTR         dhns.{{ dns_zone }}.
+10              IN  PTR         provision.{{ dns_zone }}.
+{% for item in master_names  %}
+{{ 20 + loop.index0 }}  IN  PTR   master{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.  
+{% endfor %}
+{% for item in worker_names  %}
+{{ 30 + loop.index0 }}  IN  PTR   worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}.  
+{% endfor %}
+
+100             IN  PTR         api.{{ cluster_name }}.{{ dns_zone }}.
+101             IN  PTR         api-int.{{ cluster_name }}.{{ dns_zone }}.
+

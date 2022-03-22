@@ -1,0 +1,12 @@
+zone "{{ dns_zone }}" IN {
+            type master;
+            file "{{ dns_zone }}.zone";
+};
+
+
+//backward zone
+zone "{{ dns_backzone_filename }}" IN {
+            type master;
+            file "{{ dns_zone }}.rzone";
+};
+

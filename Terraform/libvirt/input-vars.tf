@@ -53,11 +53,55 @@ variable "support_net_config_nameserver" {
   default = "8.8.8.8"
 }
 
+variable "dns_zone" {
+  description = "DNS base zone for the Openshift cluster"
+  type = string
+  default = "tale.net"
+}
+
+variable "cluster_name" {
+  description = "Cluster name which is part of the DNS domain"
+  type = string
+  default = "ocp4"
+}
+
+#MAC ADDRESSES
+variable "provision_mac" {
+  description = "MAC address for provision VM NIC"
+  type = string
+  default = "52:54:00:9d:41:3c"
+}
+
+variable "master_provision_mac_base" {
+  description = "MAC address common part for the master NICs in the provisioning network"
+  type = string
+  default = "52:54:00:74:dc:a"
+}
+
+variable "master_chucky_mac_base" {
+  description = "MAC address common part for the master NICs in the chucky network"
+  type = string
+  default = "52:54:00:a9:6d:7"
+}
+
+variable "worker_provision_mac_base" {
+  description = "MAC address common part for the worker NICs in the provisioning network"
+  type = string
+  default = "52:54:00:74:dc:d"
+}
+
+variable "worker_chucky_mac_base" {
+  description = "MAC address common part for the worker NICs in the chucky network"
+  type = string
+  default = "52:54:00:a9:6d:9"
+}
 
 locals {
+  #Short version of the chucky net address space (192.168.30)
+  chucky_short_net = replace(var.chucky_net_addr,".0/24","")
   #IP address for the network interface connected to the provisioning network in the provisioning VM
   provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
-  #IP address for the support VM
+  #IP address for the support VM in the chucky network
   support_net_config_address = replace(var.chucky_net_addr,".0/",".3/")
   #Gateway IP for the routable chucky network
   chucky_gateway = replace(var.chucky_net_addr,".0/24",".1")
@@ -69,4 +113,12 @@ locals {
   provisioning_dhcp_start = replace(var.provision_net_addr,".0/24",".20")
   #End of the provisioning networkk DHCP Range
   provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
+  #DNS reverse zone filename
+  #What this does is:
+  # - Remove the ".0/24" from the chucky network definition: "192.168.30"
+  # - Separate the remaining octects in a list: ["192","168","30"]
+  # - Reveres the list: ["30","168","192"]
+  # - Add an element to the end of the list: ["30","168","192","in-addr.arpa"]
+  # - Make a string by joining the list elements with dots: "30.168.192.in-addr.arpa"
+  dns_backzone_filename = join(".",concat(reverse(split(".",replace(var.chucky_net_addr,".0/24",""))),["in-addr.arpa"]))
 }

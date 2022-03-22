@@ -111,7 +111,7 @@ resource "libvirt_domain" "provision_domain" {
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:9D:41:3C"
+    mac        = var.provision_mac
   }
 
   boot_device {
@@ -158,11 +158,11 @@ resource "libvirt_domain" "master_domains" {
 
   network_interface {
     network_id = libvirt_network.provision.id
-    mac        = "52:54:00:74:DC:A${count.index}"
+    mac        = "${var.master_provision_mac_base}${count.index}"
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:A9:6D:7${count.index}"
+    mac        = "${var.master_chucky_mac_base}${count.index}"
   }
 
   boot_device {
@@ -210,11 +210,11 @@ resource "libvirt_domain" "worker_domains" {
 
   network_interface {
     network_id = libvirt_network.provision.id
-    mac        = "52:54:00:74:DC:D${count.index}"
+    mac        = "${var.worker_provision_mac_base}${count.index}"
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "52:54:00:A9:6D:9${count.index}"
+    mac        = "${var.worker_chucky_mac_base}${count.index}"
   }
 
   boot_device {

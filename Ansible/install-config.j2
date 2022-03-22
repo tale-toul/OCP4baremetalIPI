@@ -1,14 +1,14 @@
 apiVersion: v1
-basedomain: tale.net
+basedomain: {{ dns_zone }}
 metadata:
-  name: ocp4
+  name: {{ cluster_name }}
 networking:
   machineNetwork:
   - cidr: {{ chucky_net_addr }}
   networkType: OVNKubernetes
 compute:
 - name: worker
-  replicas: 2
+  replicas: {{ number_of_workers }}
 controlPlane:
   name: master
   replicas: 3
@@ -31,7 +31,7 @@ platform:
           disableCertificateVerification: true
           username: {{ vbmc_user }}
           password: {{ vbmc_password }}
-        bootMACAddress: 52:54:00:74:dc:a{{ loop.index0 }}
+        bootMACAddress: {{ master_provision_mac_base }}{{ loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}
 {% for item in worker_names %}
@@ -42,7 +42,7 @@ platform:
           disableCertificateVerification: true
           username: {{ vbmc_user }}
           password: {{ vbmc_password }}
-        bootMACAddress: 52:54:00:74:dc:d{{ loop.index0 }}
+        bootMACAddress: {{ worker_provision_mac_base }}{{ loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}
 pullSecret: '{{ lookup('file', 'pull-secret')  }}'
