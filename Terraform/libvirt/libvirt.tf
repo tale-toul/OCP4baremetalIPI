@@ -149,8 +149,8 @@ resource "libvirt_domain" "master_domains" {
   running = false
   autostart = false
 
-  memory = "16384"
-  vcpu   = 4
+  memory = var.master_resources.memory
+  vcpu   = var.master_resources.vcpu
 
   disk {
     volume_id = libvirt_volume.master_volumes[count.index].id
@@ -201,8 +201,8 @@ resource "libvirt_domain" "worker_domains" {
   running = false
   autostart = false
 
-  memory = "16384"
-  vcpu   = 4
+  memory = var.worker_resources.memory
+  vcpu   = var.worker_resources.vcpu
 
   disk {
     volume_id = libvirt_volume.worker_volumes[count.index].id

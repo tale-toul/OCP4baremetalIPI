@@ -44,6 +44,9 @@
         extensions:
           - 'data'
           - 'var'
+    - name: Wait for support VM connection to become available
+      wait_for_connection:
+        timeout: 300
     - name: Subscribe with Red Hat
       redhat_subscription:
         state: present
@@ -179,6 +182,9 @@
         extensions:
           - 'data'
           - 'var'
+    - name: Wait for provision VM connection to become available
+      wait_for_connection:
+        timeout: 300
     - name: Subscribe with Red Hat
       redhat_subscription:
         state: present

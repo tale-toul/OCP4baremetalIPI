@@ -32,6 +32,9 @@
         extensions:
           - 'data'
           - 'var'
+    - name: Wait for EC2 instance connection to become available
+      wait_for_connection:
+        timeout: 300
     - name: Subscribe with Red Hat
       redhat_subscription:
         state: present

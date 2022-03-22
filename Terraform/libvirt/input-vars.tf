@@ -29,6 +29,30 @@ variable "support_resources" {
   }
 }
 
+variable "master_resources" {
+  description = "Ammount of CPU and memory resources assigned to the master VMs"
+  type = object({
+    memory = string
+    vcpu = number
+  })
+  default = {
+    memory = "16384"
+    vcpu = 4
+  }
+}
+
+variable "worker_resources" {
+  description = "Ammount of CPU and memory resources assigned to the worker VMs"
+  type = object({
+    memory = string
+    vcpu = number
+  })
+  default = {
+    memory = "16384"
+    vcpu = 4
+  }
+}
+
 variable "number_of_workers" {
   description = "How many worker VMs to create"
   type = number
