@@ -22,7 +22,7 @@
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
 * [Creating the support VM](#creating-the-support-vm)  
-  * [Set up DNS and DHCP](#set-up-dns-and-dhcp)
+  * [Set up the DNS server](#set-up-the-DNS-server)
   * [Set up the DHCP server](#set-up-the-dhcp-server)
 * [Setup the physical host in AWS](#setup-the-physical-host-in-aws)
   * [Import the VM providing DHCP and DNS services](#import-the-vm-providing-dhcp-and-dns-services)
