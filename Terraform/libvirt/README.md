@@ -1,4 +1,4 @@
-# KVM based infrastructure with terraform
+# Libvirt/KVM based infrastructure with terraform
 
 This directory contains the terraform templates and support files required to deploy the KVM/libvirt based infrastructure components required to deploy the baremetal IPI OCP cluster.
 
@@ -30,6 +30,31 @@ If you ever set or change modules or backend configuration for Terraform,
 rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
 ```
+## Input variables
+
+Many aspects of the infrastructure created by terraform can be modified by assigning different values to the variables defined in the file **input-vars.tf**
+
+All variables contain default values so it is not neccessary to modify them in order to create a funtioning infrastructure. 
+
+The list of variables its purpose and default value are:
+
+* **rhel8_image_location**.- Paht and filename to qcow2 image that will be used as the base for the operating system in the support and provision VMs
+
+     Default value: "rhel8.qcow2"
+
+* **provision_resources**.- Object variable with two fields: 
+
+     memory.- The ammount of memory in MB to be assigned to the provision VM 
+     vcpu.- The number of CPUS to be assigned to the provision VM 
+
+     Default values: memory = "24576"  vcpu = 4
+
+* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
+
+* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.  The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with the number of workers.
+
+* The variables **provision_resources** and **support_resources** contain the ammount of memory and virtual CPUS that the provision and support VMs will have.  Review its default values in the file **Terraform/libvirt/input-vars.tf** and adapt accordingly.
+
 ## Deploying the infrastructure
 
 * Add the RHEL 8 disk image 
@@ -40,11 +65,6 @@ commands will detect it and remind you to do so if necessary.
 ```
 $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qcow2
 ```
-* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
-
-* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.  The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with the number of workers.
-
-* The variables **provision_resources** and **support_resources** contain the ammount of memory and virtual CPUS that the provision and support VMs will have.  Review its default values in the file **Terraform/libvirt/input-vars.tf** and adapt accordingly.
 
 * If this is a fresh deployment, delete any previous **terraform.tfstate** file that may be laying around from previous attempts.
 
@@ -53,6 +73,8 @@ $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qco
 $ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2" -var="number_of_workers=2" \
   -var='provision_resources={"memory":"32768","vcpu":6}' -var='support_resources={"memory":"32768","vcpu":6}'
 ```
+
+
 
 ## Created resources
 The template creates the following components:
