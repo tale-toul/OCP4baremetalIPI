@@ -38,16 +38,45 @@ All variables contain default values so it is not neccessary to modify them in o
 
 The list of variables its purpose and default value are:
 
-* **rhel8_image_location**.- Paht and filename to qcow2 image that will be used as the base for the operating system in the support and provision VMs
+* **rhel8_image_location**.- Path and filename to the qcow2 image to be used as the base for the operating system in the support and provision VMs
 
-     Default value: "rhel8.qcow2"
+     Default value: rhel8.qcow2
 
 * **provision_resources**.- Object variable with two fields: 
 
-     memory.- The ammount of memory in MB to be assigned to the provision VM 
-     vcpu.- The number of CPUS to be assigned to the provision VM 
+     memory.- The ammount of memory in MB to be assigned to the provision VM
 
-     Default values: memory = "24576"  vcpu = 4
+     vcpu.- The number of CPUS to be assigned to the provision VM
+
+     Default values: memory = 24576    vcpu = 4
+
+* **support_resources**.-  Object variable with two fields:
+
+     memory.- The ammount of memory in MB to be assigned to the support VM
+
+     vcpu.- The number of CPUS to be assigned to the support VM
+
+     Default values: memory = 24576    vcpu = 4
+
+* **master_resources**.- Object variable with two fields:
+
+     memory.- The ammount of memory in MB to be assigned to the master VMs
+
+     vcpu.- The number of CPUS to be assigned to the master VMs
+
+     Default values: memory = "16384"   vcpu = 4
+
+* **worker_resources**.- Object variable with two fields:
+
+     memory.- The ammount of memory in MB to be assigned to the worker VMs
+
+     vcpu.- The number of CPUS to be assigned to the worker VMs
+
+     Default values: memory = "16384"   vcpu = 4
+
+* **number_of_workers**.- How many worker nodes will be created by terraform.  Currently the number must be between 1 and 7
+
+     Default value: 3
 
 * Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
 

@@ -259,6 +259,56 @@
         owner: kni
         group: kni
         mode: 0644
+    - name: Create {{ cluster_name }} directory
+      file:
+        path: /home/kni/{{ cluster_name }}
+        state: directory
+        owner: kni
+        group: kni
+        mode: '0750'
+    - name: Uncompress oc client file
+      unarchive:
+        src: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_version }}/openshift-client-linux.tar.gz
+        dest: /home/kni
+        remote_src: yes
+    - name: Copy oc client to /usr/local/bin
+      copy:
+        src: /home/kni/oc
+        dest: /usr/local/bin/oc
+        mode: 0755
+        remote_src: yes
+    - name: Create pull secret file
+      copy:
+        src: pull-secret
+        dest: /home/kni
+        owner: kni
+        group: kni
+        mode: 0640
+    - name: Get release.txt file for version {{ ocp_version }}
+      get_url:
+        url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ ocp_version }}/release.txt
+        dest: /home/kni
+        owner: kni
+        group: kni
+        mode: 0640
+    - name: Extract OCP {{ ocp_version }} release image URI
+#The default behavior of lookup is to return a string of comma separated values that is why the regular expression looks for a command instead of $ to terminate the capture
+#https://docs.ansible.com/ansible/latest/plugins/lookup.html#forcing-lookups-to-return-lists-query-and-wantlist-true
+      set_fact:
+        release_image: "{{ lookup('url','https://mirror.openshift.com/pub/openshift-v4/clients/ocp/' + ocp_version + '/release.txt') | regex_search('Pull From: (quay.io[^,]+),.*', '\\1') | list | first }}"
+    - name: Build the installer dowload command
+      lineinfile:
+        path: /home/kni/download_installer
+        line: oc adm release extract --registry-config pull-secret --command=openshift-baremetal-install --to . {{ release_image }}
+        owner: kni
+        group: kni
+        mode: 0644
+        create: yes
+    - name: Download Openshift installer
+      command: oc adm release extract --registry-config pull-secret --command=openshift-baremetal-install --to . {{ release_image }}
+      args:
+        chdir: /home/kni
+        creates: /home/kni/openshift-baremetal-install
     - name: Update OS
       dnf:
         name: "*"

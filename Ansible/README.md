@@ -199,3 +199,47 @@ The final task enables and starts the DHCP and DNS services:
     - named
     - dhcpd
 ```
+
+### Extracting the main release image URI 
+
+The following task extracts the URI to quay.io, for the release image from a file hosted on an Internet server.
+
+The URI is in the format:
+
+```
+quay.io/openshift-release-dev/ocp-release@sha256:386f4e08c48d01e0c73d294a88bb64fac3284d1d16a5b8938deb3b8699825a88
+```
+And is contained in the file release.txt that exists for every OCP 4 version.
+
+```
+    - name: Extract OCP {{ ocp_version }} release image URI
+      set_fact:
+        release_image: "{{ lookup('url','https://mirror.openshift.com/pub/openshift-v4/clients/ocp/' + ocp_version + '/release.txt') | regex_search('Pull From: (quay.io[^,]+),.*', '\\1') | list | first }}"
+```
+What the task does is:
+
+* Get the remote file using the [lookup ansible pluging](https://docs.ansible.com/ansible/latest/plugins/lookup.html) that can read and return content from a variety of sources.  In this case the source is a url that is constructed using the variable **ocp_version** that contains a string like **4.9.5**:
+```
+lookup('url','https://mirror.openshift.com/pub/openshift-v4/clients/ocp/' + ocp_version + '/release.txt')
+```
+For a list of lookup plugins use the command:
+```
+$ ansible-doc -t lookup -l
+```
+For documentation on a particular lookup plugin use the command:
+```
+$ ansible-doc -t lookup url
+```
+The information returned by **lookup** is, by default, a string of comma separated values, each value representing a line in the file, so the regular expression used to extract the desired information must consider its input as a single line with commas instead of new lines to separate the lines in the original file:
+```
+regex_search('Pull From: (quay.io[^,]+),.*', '\\1')
+```
+The above regular expresion will look for the first occurence of "Pull From: " and the next part between parentheses is saved in and later returnen as output '\\1'.  The part between parentheses `(quay.io[^,]+)` captures the literal quay.io followed by any number of characters not containg a literal comma, the capture ends when a comma is found followed by any number of arbitrary characters, which are not saved and therefore not returned in the output.
+
+The resulting output from the regular expression is a list in unicode format, so the next two filters conver it to a regular list without unicode encoding and return the first, and hopefully only element in that list.  
+
+The output is saved to the variable release_image that should contain something like:
+```
+quay.io/openshift-release-dev/ocp-release@sha256:386f4e08c48d01e0c73d294a88bb64fac3284d1d16a5b8938deb3b8699825a88
+```
+

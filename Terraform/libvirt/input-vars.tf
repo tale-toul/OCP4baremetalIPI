@@ -1,6 +1,6 @@
 #VARIABLES
 variable "rhel8_image_location" {
- description = "Path to the RHEL 8 qcow2 image to be used as base image for VMs"
+ description = "Path and name to the RHEL 8 qcow2 image to be used as base image for VMs"
   type = string
   default = "rhel8.qcow2"
 }
@@ -57,6 +57,11 @@ variable "number_of_workers" {
   description = "How many worker VMs to create"
   type = number
   default = 3
+
+  validation {
+    condition = var.number_of_workers > 0 && var.number_of_workers <= 7 
+    error_message = "The number of workers that can be created with terraform must be between 1 and 7."
+  }
 }
 
 variable "chucky_net_addr" {
@@ -87,6 +92,12 @@ variable "cluster_name" {
   description = "Cluster name which is part of the DNS domain"
   type = string
   default = "ocp4"
+}
+
+variable "ocp_version" {
+  description = "Openshift version number to be deployed"
+  type = string
+  default = "4.9.5"
 }
 
 #MAC ADDRESSES
@@ -146,4 +157,7 @@ locals {
   # - Add an element to the end of the list: ["30","168","192","in-addr.arpa"]
   # - Make a string by joining the list elements with dots: "30.168.192.in-addr.arpa"
   dns_backzone_filename = join(".",concat(reverse(split(".",replace(var.chucky_net_addr,".0/24",""))),["in-addr.arpa"]))
+
+  #Cluster name without quotes
+  cluster_name_nq = trim(var.cluster_name,"\"")
 }
