@@ -41,7 +41,12 @@ output "master_chucky_mac_base" {
 
 output "support_host_ip" {  
  value       = local.support_host_ip
- description = "The support host IP address"
+ description = "The support host IP address in the routable network"
+}
+
+output "provision_host_ip" {
+  value      = local.provision_host_ip
+  description = "The provision host IP address in the routable network"
 }
 
 output "api_vip" {

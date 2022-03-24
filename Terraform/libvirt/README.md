@@ -36,6 +36,8 @@ Many aspects of the infrastructure created by terraform can be modified by assig
 
 All variables contain default values so it is not neccessary to modify them in order to create a funtioning infrastructure. 
 
+Most of the input variables used to configure the infrastructure are defined in the inpu-vars.tf file to simplify and organize the information, even if they are not used by terraform.  For example the variable **ocp_version** is not used by terraform however is defined here.  Most of the input variables are also defined as output variables so they can be used later by the ansible playbooks.
+
 The list of variables its purpose and default value are:
 
 * **rhel8_image_location**.- Path and filename to the qcow2 image to be used as the base for the operating system in the support and provision VMs
@@ -74,15 +76,87 @@ The list of variables its purpose and default value are:
 
      Default values: memory = "16384"   vcpu = 4
 
-* **number_of_workers**.- How many worker nodes will be created by terraform.  Currently the number must be between 1 and 7
+* **number_of_workers**.- How many worker nodes will be created by terraform.  The number must be between 1 and 16.
 
      Default value: 3
 
-* Check the default values for the support VM's network configuration and update accordingly, in particular the DNS server's IP, they are defined in the variable **support_net_config** in the file **Terraform/libvirt/input-vars.tf**
+* **chucky_net_addr**.- Network address for the routable network where all VMs are connected
 
-* The variable **number_of_workers** controls the number of worker nodes in the cluster, its default value is 3, if a different number is required assing the new value in the command line as in the example later.  At the moment the maximum number of workers that terraform can create is **10**.  The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with the number of workers.
+     Default value: 192.168.30.0/24
 
-* The variables **provision_resources** and **support_resources** contain the ammount of memory and virtual CPUS that the provision and support VMs will have.  Review its default values in the file **Terraform/libvirt/input-vars.tf** and adapt accordingly.
+* **provision_net_addr**.- Network address for the provisioning network where cluster nodes and provisioning host are connected.
+
+     Default value: 192.168.14.0/24
+
+* **support_net_config_nameserver**.- IP address for the external DNS server used by the support host.  This name server is initialy used to resolve host names so the support host can register and install packages.
+
+     Default value: 8.8.8.8
+
+* **dns_zone**.- DNS base zone for the Openshift cluster.  This is a private zone that is not resolvable outside the virtual networks or EC2 instance so any value can be used.
+
+     Default value:  tale.net
+
+*  **cluster_name**.- Used as the subdomain for the whole cluster DNS name.  For example for a cluster name of **ocp4** and a dns zone of **tale.net** the whole cluster domain is **ocp4.tale.net**
+
+     Default value: ocp4
+
+* **ocp_version**.- Openshift version to be deployed.  Available versions can be seen [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/) 
+
+     Default value: 4.9.5
+
+* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  This is used in the DHCP server to assign a known IP to the provision VM in the chucky network.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:9d:41:3c
+
+* **master_provision_mac_base**.- MAC address common part for the master NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:74:dc:a0 to 52:54:00:74:dc:af.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:74:dc:a
+
+* **master_chucky_mac_base**.- MAC address common part for the master NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:70 to 52:54:00:a9:6d:7f.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:a9:6d:7
+
+* **worker_provision_mac_base**.- MAC address common part for the worker NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:74:dc:d0 to  52:54:00:74:dc:df.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:74:dc:d
+
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:90  to 52:54:00:a9:6d:9f.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:a9:6d:9
+
+### Assigning values to input variables
+
+There are 3 different ways in which to assign new values to the input variables describe above:
+
+* Modify the default value in the input-vars.tf file.- All variables have a defalt line, so it is possible to just edit the file and assign the desired value by editing the **default =** line.
+```
+variable "chucky_net_addr" {
+  description = "Network address for the routable chucky network"
+  type = string
+  default = "10.0.4.0/24"
+}
+```
+* Assing the values in the command line.- Values assigned in the command line overwrite the default values in the input-vars.tf file.
+```
+$ terraform apply -var='number_of_workers=6'  -var='cluster_name="monaco"' -var='worker_resources={"memory":"16384","vcpu":6}' \
+  -var='chucky_net_addr=192.168.55.0/24' -var='provision_net_addr=172.22.0.0/24' -var='support_net_config_nameserver=169.254.169.253' \
+  -var='dns_zone=benaka.cc'
+```
+* Add the variable assignments to a file and call that file in the command line.  For example, the following content is added to the file monaco.vars
+
+```
+number_of_workers = 6  
+cluster_name = "monaco"
+worker_resources = {"memory":"16384","vcpu":6}
+chucky_net_addr = "192.168.55.0/24"
+provision_net_addr = "172.22.0.0/24"
+support_net_config_nameserver = "169.254.169.253"
+dns_zone = "benaka.cc"
+```
+And the terraform command to use those definitions is:
+```
+$ terraform apply -var-file monaco.vars
+```
 
 ## Deploying the infrastructure
 
@@ -189,6 +263,16 @@ The result from applying the variables is something like:
   uri = "qemu+ssh://ec2-user@3.223.112.4/system?keyfile=../baremetal-ssh.pub"
 ```
 
-@#TO DO#@
+## Dynamic MAC address assignment
 
-The DHCP and DNS configuration files in the support VM are not dynamicaly created and will not be properly updated with a changing number of workers.
+The MAC addresses for worker nodes are dynamically created using a base and a loop variable in the terraform template file libvirt.tf
+
+The count.index variable takes values from 0 to 16, that must be converted to an hexadecimal character 0 to a, this is done with the [format terraform function](https://www.terraform.io/language/functions/format):
+
+```
+network_interface {
+  network_id = libvirt_network.chucky.id
+  mac        = format("${var.worker_chucky_mac_base}%x",count.index)
+}
+```
+A similar formating trick is used in ansible, for the same purposes.

@@ -20,9 +20,13 @@
     - name: Update support group in inventory file
       blockinfile:
         path: inventory
-        block: "{{ support_host_ip }}"
-        marker: "# {mark} Ansible block for support"
+        marker: "# {mark} Ansible block for support and provision"
         insertafter: "^\\[support\\]$"
+        block: |
+          {{ support_host_ip }}
+
+          [provision]
+          {{ provision_host_ip }}
     - name: Update support vars in inventory file
       blockinfile:
         path: inventory
@@ -153,7 +157,7 @@
         index_var: x
     - name: Allow access to vbmc VMs ports in firewall
       firewalld:
-        port: 700{{ x }}/udp
+        port: "{{ 7000 + x }}/udp"
         zone: libvirt
         permanent: yes
         immediate: yes
@@ -164,7 +168,7 @@
 
     - name: Enable access to the KVM Virtual Machines VNC displays
       firewalld:
-        port: 590{{ x }}/tcp
+        port: "{{ 5900 + x }}/tcp"
         zone: public
         permanent: yes
         immediate: yes

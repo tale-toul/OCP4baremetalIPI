@@ -210,11 +210,11 @@ resource "libvirt_domain" "worker_domains" {
 
   network_interface {
     network_id = libvirt_network.provision.id
-    mac        = "${var.worker_provision_mac_base}${count.index}"
+    mac        = format("${var.worker_provision_mac_base}%x",count.index)
   }
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = "${var.worker_chucky_mac_base}${count.index}"
+    mac        = format("${var.worker_chucky_mac_base}%x",count.index)
   }
 
   boot_device {

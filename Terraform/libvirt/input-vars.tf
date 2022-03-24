@@ -59,8 +59,8 @@ variable "number_of_workers" {
   default = 3
 
   validation {
-    condition = var.number_of_workers > 0 && var.number_of_workers <= 7 
-    error_message = "The number of workers that can be created with terraform must be between 1 and 7."
+    condition = var.number_of_workers > 0 && var.number_of_workers <= 16
+    error_message = "The number of workers that can be created with terraform must be between 1 and 16."
   }
 }
 
@@ -103,7 +103,7 @@ variable "ocp_version" {
 #MAC ADDRESSES
 #The letters in the MACs should be in lowercase
 variable "provision_mac" {
-  description = "MAC address for provision VM NIC"
+  description = "MAC address for provision VM NIC in the routable (chucky) network"
   type = string
   default = "52:54:00:9d:41:3c"
 }
@@ -135,20 +135,31 @@ variable "worker_chucky_mac_base" {
 locals {
   #Short version of the chucky net address space (192.168.30)
   chucky_short_net = replace(var.chucky_net_addr,".0/24","")
+
   #IP address for the network interface connected to the provisioning network in the provisioning VM
   provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
+
   #IP address for the support VM in the chucky network
   support_host_ip =            replace(var.chucky_net_addr,".0/24",".3")
+
+  #IP address for the provision VM in the chucky network
+  provision_host_ip =          replace(var.chucky_net_addr,".0/24",".10")
+
   #Gateway IP for the routable chucky network
   chucky_gateway = replace(var.chucky_net_addr,".0/24",".1")
+
   #IP address for the OCP API VIP, in routable chucky network
   api_vip = replace(var.chucky_net_addr,".0/24",".100")
+
   #IP address for the OCP ingress VIP, in routable chucky network
   ingress_vip = replace(var.chucky_net_addr,".0/24",".110")
+
   #Start of the provisioning networkk DHCP Range
   provisioning_dhcp_start = replace(var.provision_net_addr,".0/24",".20")
+
   #End of the provisioning networkk DHCP Range
   provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
+
   #DNS reverse zone filename
   #What this does is:
   # - Remove the ".0/24" from the chucky network definition: "192.168.30"

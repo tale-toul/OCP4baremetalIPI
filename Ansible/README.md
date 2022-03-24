@@ -243,3 +243,19 @@ The output is saved to the variable release_image that should contain something 
 quay.io/openshift-release-dev/ocp-release@sha256:386f4e08c48d01e0c73d294a88bb64fac3284d1d16a5b8938deb3b8699825a88
 ```
 
+### Dynamic MAC address assignment
+
+The MAC addresses for worker nodes are dynamically created using a base and a loop variable in template files hcpd.conf.j2 and install-config.j2.
+
+The loop.index0 variable takes values from 0 to 16, that must be converted to an hexadecimal character 0 to a, this is done with the [python expression](https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting) **'%x' % loop.index0**:
+
+```
+{% for item in worker_names %}
+host worker{{ loop.index0 }} {
+  hardware ethernet {{ worker_chucky_mac_base }}{{ '%x' % loop.index0 }};
+  fixed-address {{ chucky_short_net }}.{{ 30 + loop.index0 }};
+  option host-name "worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}";
+}
+{% endfor %}
+```
+A similar formating trick is used in terraform, for the same purposes.

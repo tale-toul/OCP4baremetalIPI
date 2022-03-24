@@ -1,15 +1,14 @@
 [baremetal]
 # BEGIN ANSIBLE MANAGED BLOCK
-34.206.80.187
+23.20.178.15
 # END ANSIBLE MANAGED BLOCK
 [support]
-# BEGIN Ansible block for support
-192.168.30.3
-# END Ansible block for support
+# BEGIN Ansible block for support and provision
+192.168.55.3
 
 [provision]
-# The IP is taken from the dhcp file used in the support VM
-192.168.30.10
+192.168.55.10
+# END Ansible block for support and provision
 
 [kvm:children]
 support
@@ -17,6 +16,6 @@ provision
 
 [kvm:vars]
 # BEGIN Ansible block for support variables
-ansible_ssh_common_args='-o ProxyJump="ec2-user@34.206.80.187"'
+ansible_ssh_common_args='-o ProxyJump="ec2-user@23.20.178.15"' 
 # END Ansible block for support variables
 ansible_user=root
