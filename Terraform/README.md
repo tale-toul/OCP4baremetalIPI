@@ -2,26 +2,36 @@
 
 ## Create the AWS metal instance
 
-The terraform template in this directory creates a metal instance in AWS to be used as a base to deploy a baremetal OCP 4 cluster using KVM/libvirt.
+The terraform template in this directory creates an EC2 metal instance in AWS to be used as a base to deploy the libvirt/KVM resources required to deploy a baremetal OCP 4 cluster using baremetal IPI installation method
 
-The elements created are:
+## Module initialization
 
-* A VPC
-* A public subnet in the first availability zone of the VPC
-* An Internet gateway to provide access to and from the Intetnet to the EC2 instance created in the public zone
-* A routing table that links the public subnet to the Internet Gateway
-* An elastic IP for the EC2 instance 
-* A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5010(vnc), 6443(OCP API)
-* A security group to allow outbound connections from the EC2 instance and hence any VM to any port in the outside world
-* An EC2 instance of type c5n.metal, powerfull enough to run the KVM VMs
+Before running terraform for the first time, the modules used by the template must be downloaded and initialized, this requires an active Internet connection.  
+
+Run the following command in the directory where the terraform templates reside.  The command can be safely run many times, it will not trampled previous executions:
+```
+$ cd libvirt
+$ terraform init
+
+Initializing the backend...
 
 ## Applying the terraform template
 
-The terraform template requires a public ssh key file in the Terraform directory, the name for the file must be __ssh.pub__, if a different name is used, the variable **ssh-keyfile** must be defined with the new filename.  This public ssh keyfile will be injected into the EC2 instance so the ec2-user can later connect via ssh.
+Some variables are defined in the Terraform/input-vars.tf** that can be used to modify some configuration parameters.  The most relevan of these are:
 
-The AWS region to deploy the infrastructure can be defined with the variable **region_name**, the default region is **us-east-1** (N. Virginia).  Keep in mind that the same infrastructure may incur different costs depending on the region used.
+* **region_name**.- AWS Region where the EC2 instance and other resources are created.  Keep in mind that the same infrastructure may incur different costs depending on the region.
 
-The type of AWS instance created is defined with the variable **instance_type**, by default the instance type created is **c5n.metal**.  If the variable is defined with a different value, it must be a metal type instance for example g4dn.metal
+     Default value: us-east-1
+
+* **ssh-keyfile**.- Name of the file with the public part of the SSH key to transfer to the EC2 instance.  This public ssh keyfile will be injected into the EC2 instance so the ec2-user can later connect via ssh using the corresponding private part.
+
+     Default value:  ssh.pub
+
+* **instance_type**.- AWS instance type for the hypervisor machine.  This must be a metal instance.
+
+     Default value: c5n.metal
+
+Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
 Apply the template to create the infrastructure with a command like:
 ```
@@ -59,6 +69,18 @@ The command to connect would be something like:
 ```
 $ ssh -i baremetal-ssh.priv ec2-user@4.83.45.254
 ```
+## Components created 
+
+The elements created are:
+
+* A VPC
+* A public subnet in the first availability zone of the VPC
+* An Internet gateway to provide access to and from the Intetnet to the EC2 instance created in the public zone
+* A routing table that links the public subnet to the Internet Gateway
+* An elastic IP for the EC2 instance 
+* A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5010(vnc), 6443(OCP API)
+* A security group to allow outbound connections from the EC2 instance and hence any VM to any port in the outside world
+* An EC2 instance of type c5n.metal, powerfull enough to run the KVM VMs
 
 ## Selecting the AMI
 

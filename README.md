@@ -19,6 +19,7 @@
   * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
   * [Create the install config yaml file](#create-the-install-config-yaml-file)
   * [Install the Openshift cluster with BMC](#install-the-openshift-cluster-with-bmc) 
+* [Creating the metal instance and KVM infrastructure with terraform and ansible](#creating-the-metal-instance-and-kvm-infrastructure-with-terraform-and-ansible)
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
 * [Creating the support VM](#creating-the-support-vm)  
@@ -46,13 +47,15 @@
 
 ## Introduction
 
-This repository contains documentation on how to deploy an Openshift 4 cluster using the IPI method in a baremetal cluster on libvirt/KVM virtual machines.
+This repository contains documentation and supporting files on how to deploy an Openshift 4 cluster using the IPI method in a **baremetal** cluster on libvirt/KVM virtual machines.
 
 The instruction given here are meant to deploy a test cluster and help understand the process of deploying a baremetal IPI Openshift 4 cluster at a reduced cost, compared to deploying the same cluster using real baremetal servers.
 
-Even in the scenario depicted here a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
+Even in the scenario depicted here, a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
 
-The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively 
+The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively.
+
+A section on how to create the infrastructure, including the metal instance in AWS and the libvirt VMs, using terraform and ansible is provided in section [Creating the metal instance and KVM infrastructure with terraform and ansible](#creating-the-metal-instance-and-kvm-infrastructure-with-terraform-and-ansible)
 
 ## Reference documentation
 
@@ -685,6 +688,17 @@ Finally run the installer from the provisioning host:
 ```
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
 ```
+
+## Creating the metal instance and KVM infrastructure with terraform and ansible
+
+The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configure to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
+
+For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the local host.
+
+* Go to the [Terraform directory](https://github.com/tale-toul/OCP4baremetalIPI/tree/main/Terraform) and follow the instructions there to deploy the metal instance and associated components in AWS.
+
+* 
+
 
 ## Troubleshooting the installation
 
