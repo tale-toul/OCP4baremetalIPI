@@ -14,6 +14,7 @@ $ cd libvirt
 $ terraform init
 
 Initializing the backend...
+```
 
 ## Applying the terraform template
 
@@ -42,7 +43,7 @@ If the terraform variables are used with non default values, keep a copy of the 
 $ echo !! > terraform_apply.txt
 ```
 
-When all the infrastructure components have been created, output variables are shown, of special interest is the public IP of the EC2 instance:
+When all the infrastructure components have been created, output variables are shown, of special interest is the EC2 instance's public IP:
 
 ```
 baremetal_public_ip = "4.83.45.254"
@@ -53,9 +54,9 @@ vpc_cidr = "172.20.0.0/16"
 ```
 ## Connecting to the EC2 instance
 
-It may take a few minutes after creation for the EC2 instance to be ready to receive connections.
+It may take a few minutes after creation for the EC2 instance to be ready and accept connections.
 
-Ssh is used to open a shell with the EC2 instance created by terraform.  
+Ssh is used to connect to the EC2 instance created by terraform.  
 
 The elements required are:
 * The private part of the ssh key injected earlier 
@@ -65,11 +66,11 @@ The elements required are:
 $ terraform output baremetal_public_ip
 "4.83.45.254"
 ```
-The command to connect would be something like:
+The command to connect looks something like:
 ```
 $ ssh -i baremetal-ssh.priv ec2-user@4.83.45.254
 ```
-## Components created 
+## Resources created 
 
 The elements created are:
 
