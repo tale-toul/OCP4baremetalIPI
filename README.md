@@ -1387,15 +1387,22 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## External access to Openshift using NGINX
 
-The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts, this is because the IPs for the API endpoint and ingress controller are assigned from the virtual network created by libvirt, and this network is not accessible from outside the physical host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts.  This is because the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network created by libvirt and this network is not accessible from outside the physical host.
 
-One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in said the physical host and use it to rely requests to the Openshift cluster.
+One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.
 
 In this documentation a reverse proxy based on NGINX is used.
 
-The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes through port 443 and insecure application routes through on port 80.
+The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes on port 443 and insecure application routes on port 80.
 
-The external DNS names used to access the applications and API endpoint can be different from the internal ones used by Openshift.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host (tale.net), the reverse proxy can do the translation between the external and internal zones.
+The external DNS names used to access the applications and API endpoint can be different from the internal ones used by Openshift.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host, the reverse proxy can do the translation between the external and internal zones.
+```
+                         ┌────────┐
+                         │        │
+                 ────────► NGINX  ├──────►
+app1.oxample.com         │        │      app1.ocp4.company.dom
+                         └────────┘
+```
 
 The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
