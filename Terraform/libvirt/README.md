@@ -171,10 +171,9 @@ $ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qco
 
 * If this is a fresh deployment, delete any previous **terraform.tfstate** file that may be laying around from previous attempts.
 
-* Use a command like the following to deploy the infrastructure.  In this case a non default location for the base RHEL 8 image has been specified:
+* Use a command like the following to deploy the infrastructure.  
 ```
-$ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2" -var="number_of_workers=2" \
-  -var='provision_resources={"memory":"32768","vcpu":6}' -var='support_resources={"memory":"32768","vcpu":6}'
+$ terraform apply -var-file monaco.vars
 ```
 
 ## Created resources

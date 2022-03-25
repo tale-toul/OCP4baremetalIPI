@@ -686,7 +686,7 @@ Domain ocp4-876p7-bootstrap has been undefined
 ```
 Finally run the installer from the provisioning host:
 ```
-$ ./openshift-baremetal-install --dir ocp4/ create cluster
+$ ./openshift-baremetal-install create cluster --dir ocp4/ 
 ```
 
 ## Creating the infrastructure with terraform and ansible
@@ -709,7 +709,7 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 
      The home directory of the kni user contains all necessary files to run the Openshift installation, and all the require infrastructure should be in place and ready.
 ```
-$ ssh -J ec2-user@3.219.143.250  kni@192.168.30.3
+$ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
 ```
 
 * Review the install-config.yaml file and add or modify the configuratin options.
@@ -802,7 +802,7 @@ Add the same ports above to the security rule in the AWS instance
 
 Connect to libvirt daemon from the local host using virt-manager.  The command uses the public IP address of the EC2 instance and the _private_ part of the ssh key injected into the instance with terraform:
 ```
-$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=ssh.pub'
+$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=ssh.key'
 ```
 This command may take a couple minutes to stablish the connection before actually showing the virt-manager interface.
 
