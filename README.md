@@ -1397,16 +1397,16 @@ The reverse proxy contains different configuration sections for accessing the AP
 
 The external DNS names used to access the applications and API endpoint can be different from the internal ones used by Openshift.  If the Openshift cluster was deployed using an internal DNS zone that is not resolvable from outside the physical host, the reverse proxy can do the translation between the external and internal zones.
 ```
-                         ┌────────┐
-                         │        │
-                 ────────► NGINX  ├──────►
-app1.oxample.com         │        │      app1.ocp4.company.dom
-                         └────────┘
+                  ┌────────┐                        ┌────────┐
+                  │        │                        │        │
+          ────────► NGINX  ├───────────────────────►│ OCP 4  │
+app1.example.com  │        │  app1.ocp4.company.dom │        │
+                  └────────┘                        └────────┘
 ```
 
-The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these URLs.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.ocp4.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these two services.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
-A local DNS server based on dnsmasq could be used to resolve the console and oauth internal DNS names, but adding the names to the locahost file should also work.
+A local DNS server based on dnsmasq or adding the names to the locahost file could be used to resolve the console and oauth internal DNS names.
 
 Additional details about the NGINX configuration can be found in the [nginx directory](nginx/)
 
@@ -1423,9 +1423,7 @@ Enable and start NGINX service
 $ sudo systemctl enable nginx --now
 $ sudo systemctl status nginx
 ```
-Create DNS entries for the API endpoint and the default ingress controller.  The public DNS zone used in this example to access the Openshift cluster is _ocp4.redhat.com_
-
-Create DNS entries for api.ocp4.redhat.com and \*.apps.ocp4.redhat.com resolving to the public IP of the physical host.  Do this in the public DNS resolver for the hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
+Create DNS entries for the API endpoint (__api.ocp4.redhat.com__) and the default ingress controller (__\*.apps.ocp4.redhat.com__) resolving to the public IP of the host where ngnix is listening.  Do this in the public DNS resolver for the hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
 
 ```
 $ host api.ocp4.redhat.com
