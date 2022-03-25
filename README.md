@@ -707,13 +707,13 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 ```
 $ ssh -J ec2-user@3.219.143.250  kni@192.168.30.3
 ```
-     * The home directory of the kni user contains all necessary files to run the Openshift installation, and all the require infrastructure should be in place and ready.
+     The home directory of the kni user contains all necessary files to run the Openshift installation, and all the require infrastructure should be in place and ready.
 
-     * Review the install-config.yaml file and add or modify the configuratin options.
+     Review the install-config.yaml file and add or modify the configuratin options.
 
-     * Copy the install-config.yaml file into the directory with the name of the cluster
+     Copy the install-config.yaml file into the directory with the name of the cluster
 
-     * Run the [Openshift installer](#install-the-openshift-cluster-with-bmc)
+     Run the [Openshift installer](#install-the-openshift-cluster-with-bmc)
 
 ## Troubleshooting the installation
 
