@@ -19,7 +19,7 @@
   * [Get the pull secret Openshift installer and oc client](#get-the-pull-secret-openshift-installer-and-oc-client)
   * [Create the install config yaml file](#create-the-install-config-yaml-file)
   * [Install the Openshift cluster with BMC](#install-the-openshift-cluster-with-bmc) 
-* [Creating the metal instance and KVM infrastructure with terraform and ansible](#creating-the-metal-instance-and-kvm-infrastructure-with-terraform-and-ansible)
+  * [Creating the infrastructure with terraform and ansible](#creating-the-infrastructure-with-terraform-and-ansible)
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
 * [Creating the support VM](#creating-the-support-vm)  
@@ -55,7 +55,7 @@ Even in the scenario depicted here, a powerfull physical server is required, giv
 
 The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively.
 
-A section on how to create the infrastructure, including the metal instance in AWS and the libvirt VMs, using terraform and ansible is provided in section [Creating the metal instance and KVM infrastructure with terraform and ansible](#creating-the-metal-instance-and-kvm-infrastructure-with-terraform-and-ansible)
+A section on how to create the infrastructure, including the metal instance in AWS and the libvirt VMs, using terraform and ansible is provided in section [Creating the infrastructure with terraform and ansible](#creating-the-infrastructure-with-terraform-and-ansible)
 
 ## Reference documentation
 
@@ -689,7 +689,7 @@ Finally run the installer from the provisioning host:
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
 ```
 
-## Creating the metal instance and KVM infrastructure with terraform and ansible
+## Creating the infrastructure with terraform and ansible
 
 The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configure to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
 
