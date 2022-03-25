@@ -1,21 +1,21 @@
 # Set up the baremetal and Libvirt instances with Ansible
 
 ## Subscribe hosts with Red Hat
-The EC2 metal host and the support and provisioning VMs are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
+The EC2 metal host, the support and provisioning VMs all run on RHEL 8 and are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
 
-The data is stored in the file **Ansible/group_vars/all/subscription.data**.  The variables defined in this file are called from the ansible playbook.
+The activation key data is stored in the file **Ansible/group_vars/all/subscription.data**.  The variables defined in this file are used by the ansible playbook.
 ```
 subscription_activationkey: 1-234381329
 subscription_org_id: 19704701
 ```
-It is a good idea to encrypt this file with ansible-vault, for example to encrypt the file with the password stored in the file vault-id use a command like:
+It is recommended to encrypt this file with ansible-vault, for example to encrypt the file with the password stored in the file vault-id use a command like:
 ```
-$ ansible-vault encrypt --vault-id vault-id secrets
+$ ansible-vault encrypt --vault-id vault-id subscription.data
 ```
 
 ## Add the common ssh key
 
-Ansible needs access to the private ssh key authorized to connect to the different hosts controlled by these playbooks.  Actually it is not the playbooks but the shell environment which has access to the ssh private key.
+Ansible needs access to the _private ssh key_ authorized to connect to the different hosts controlled by these playbooks.  Actually it is not the playbooks but the shell environment which has access to the ssh private key.
 
 To simplify things the same ssh key is authorized in all hosts being managed by the ansible playbooks in this respository.
 
@@ -34,10 +34,6 @@ $ cat ~/.ssh/upi-ssh.pub
 ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote.csb
 ```
 ## Running the playbook to configure the metal EC2 instance
-
-Before running the playbook make sure the EC2 instance is fully initialized and accepting ssh connections, this may take a few minutes after creation.
-
-![Metal instance ready](../images/ec2-ready.png)
 
 The playbook by default updates the operating system and reboots the EC2 instance if any package is updated.  Rebooting the EC2 instance may take between 10 and 20 minutes.  
 

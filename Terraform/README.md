@@ -15,6 +15,12 @@ $ terraform init
 
 Initializing the backend...
 ```
+Terraform needs access to credentials for an AWS user with privileges to create resources, these can be defined in a file containing the access key ID and the access key secret with the following format. Put this file in ~/.aws/credentials:
+```
+[default]
+aws_access_key_id=xxxx
+aws_secret_access_key=xxxx
+```
 
 ## Applying the terraform template
 
@@ -82,6 +88,15 @@ The elements created are:
 * A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5010(vnc), 6443(OCP API)
 * A security group to allow outbound connections from the EC2 instance and hence any VM to any port in the outside world
 * An EC2 instance of type c5n.metal, powerfull enough to run the KVM VMs
+
+## Destroying the resources
+
+When the resources are not required anymore they can be easily removed using terraform, just run a command similar to the one used to create them using the subcommand **destroy**.  
+
+Destroying the AWS resources will also remove any Openshift or libvirt resources created in the EC2 instance.
+```
+$ terraform destroy -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
+```
 
 ## Selecting the AMI
 
