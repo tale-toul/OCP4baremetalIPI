@@ -695,9 +695,13 @@ The infrasctucture required to deploy the Openshift cluster can be created autom
 
 For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the local host.
 
-* Go to the [Terraform directory](Terraform/README.md) and follow the instructions there to deploy the metal instance and associated components in AWS.
+* Go to the [Terraform directory](Terraform/README.md) and follow the instructions to deploy the metal instance and associated components in AWS.
 
-* Go to the [Ansible directory](Ansible/README.md) and follow the instructions on the sections: [subscribe the host with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the ssh key to ansible](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
+* Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [subscribe the host with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the ssh key to ansible](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
+
+* Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources on top of which the Openshift cluster will be deployed.
+
+* Go back to the [Ansible directory](Ansible/README.md) and follow the instructions in sections [Set up KVM instances](Ansible#set-up-kvm-instances) and [Running the playbook for libvirt VMs](Ansible#running-the-playbook-for-libvirt-vms)
 
 
 ## Troubleshooting the installation

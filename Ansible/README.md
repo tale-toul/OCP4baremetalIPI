@@ -84,24 +84,22 @@ Operating System has been updated.  Reboot the host? (yes|no):
 ```
 ## Set up KVM instances
 
-A separate ansible playbook file (**support_setup.yaml**) is used to configure the KVM virtual machines created previously with terraform, in particular the provisioning and support VMs.  The cluster nodes will be set up by Openshift installation binary.
+A separate ansible playbook file (**support_setup.yaml**) is used to configure the KVM virtual machines created previously with terraform, in particular the provisioning and support VMs.
 
 This playbook shares many of the same tasks and requirements as the one defined in the file **setup_metal.yaml**:
 
 * An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
 * An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
-* A user and password to connect to the VBMC service for every VM under its control.  In this case the same user and password is used for all VMs.  The playbook expects to get the user from the following variables, save them in a file with .data or .var extension for example **Ansible/group_vars/all/vbmc_credentials.data**:
-* A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) to get the Openshift components required for installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  That is the path and name that the playbok will use look for the file.
-
+* A user and password to authenticate connections to the VBMC service for every VM under its control.  In this case the same user and password is used for all VMs.  The playbook expects to get the user from the following variables, save them in a file with **.data** or **.var** extension for example **Ansible/group_vars/all/vbmc_credentials.data**:
 ```
 vbmc_user: admin
 vbmc_password: ZexUKvat]ERU
 ```
-
-     It is recommended to encrypt this file with ansible-vault: 
+It is recommended to encrypt this file with ansible-vault: 
 ```
 $ ansible-vault encrypt --vault-id vault-id vbmc_credentials.data
 ```
+* A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) for the Openshift installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  
 
 ### Running the playbook for libvirt VMs
 

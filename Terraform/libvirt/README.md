@@ -177,20 +177,27 @@ $ terraform apply -var="rhel8_image_location=/home/user1/Downloads/rhel-8.5-x86_
   -var='provision_resources={"memory":"32768","vcpu":6}' -var='support_resources={"memory":"32768","vcpu":6}'
 ```
 
-
-
 ## Created resources
 The template creates the following components:
-* A storage pool.- This is the defalt storage pool, of type directory, using /var/lib/libvirt/images
+* A storage pool.- This is the defalt storage pool, of type directory, using /var/lib/libvirt/images directory
 * 2 networks, DHCP is disable in both networks:
   * chucky.- this is the routable network 
   * provision.- this is the provisioning network, not routable 
-* A disk volume using a RHEL8 image, that will be used as the base image for all the VMs that will be created
-* A disk volume based on the RHEL8 base volume described above.  This volume has a size of 120GB, expressed in bytes.  Cloud init will grow the size of the base volume disk to the 120GB specified here
-* A template file containing the cloud init configuration file
-* A cloud init disk based on the contents of the above configuration file
-* A provisioning VM.  It is initialized with the cloud init configuration on first boot; it is connected to both networks (chucky and provision); it uses the disk volume defined earlier; it can be contacted using VNC
+* A disk volume using a RHEL8 image, this will be used as the base image for all the VMs that will be created later.
+* A disk volume based on the RHEL8 base volume that will be the OS disk for the support VM.  This volume has a size of 120GB, expressed in bytes.  Cloud init will grow the size of the base volume disk to the 120GB specified here
+* A template file containing the cloud init user data configuration file for the support VM
+* A template file containint the cloud init network data configuration file for the support VM
+* A cloud init disk based on the contents of the above two configuration files
+* A provisioning VM.  It is initialized with the cloud init configuration on first boot; it is connected to both networks (chucky and provision); it uses the disk volume defined earlier
+* A disk volume based on the RHEL8 base volume that will be the OS disk for the provisioning VM.  
+* A template file containing the cloud init user data configuration file for the provisioning VM.
+* A template file containint the cloud init network data configuration file for the provisioning VM.
+* A cloud init disk based on the contents of the above two configuration files
 * A support VM.  This VM will run the DHCP and DNS services for the OCP cluster. 
+* 3 empty disk volumes that will be the OS disks for the master VMs. 
+* 3 master VMs.
+* A group of empty disk volumes that will be the OS disks for the worker VMs.  The ammount created depends on the variable number_of_workers.
+* A group of worker VMs. The ammount created depends on the variable number_of_workers.
 
 ## Cloud init configuration
 Reference documentation and examples:
