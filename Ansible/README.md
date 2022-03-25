@@ -111,7 +111,7 @@ $ ansible-playbook -i inventory -vvv support_setup.yaml --vault-id vault-id
 
 ### Running tasks in via a jumphost with ssh
 
-The KVM VMs are only reachable from the EC2 instance, as they are created by the terraform template in a private network which allows NAT outbound access beyond the EC2 host but inbound access is only possible from the same EC2 host, so ther are not directly reacheble from the controlling host where the ansible playbooks are run.
+The KVM VMs are only reachable from the EC2 instance as they are attached to a private network which allows NAT outbound access beyond the EC2 host but only inbound access from the EC2 host, so ther are not directly reacheble from the controlling host where the ansible playbooks are run.
 
 To allow the playbook to run tasks in the KVM VMs the ssh's **ProxyJump** option is used (similar to the **-J** command line option).  With this option an ssh tunnel is created from the controlling host running ansible to the end controlled host (support) passing through the jump host specified in the option.
 
