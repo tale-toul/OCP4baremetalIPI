@@ -691,13 +691,15 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## Creating the infrastructure with terraform and ansible
 
-The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configure to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
+The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configured to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
 
-For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the local host.
+For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the controlling.
 
 * Go to the [Terraform directory](Terraform/README.md) and follow the instructions to deploy the metal instance and associated components in AWS.
 
-* Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [subscribe the host with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the ssh key to ansible](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
+* Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [Subscribe hosts with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the common ssh key](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal EC2 instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
+
+* Optionally to get more insights about the libvirt resources from an easy to use tool, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
 
 * Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources on top of which the Openshift cluster will be deployed.
 
@@ -781,7 +783,7 @@ $ oc -n openshift-machine-api get bmh
 
 ### Connecting to the VMs with virt-manager
 
-These instructions can be applied when the physical host is an AWS metal instance, for other cases, adpat accordingly.
+These instructions can be applied when the physical host is an AWS metal instance, for other cases, adapt accordingly.
 
 Add the ec2-user to the libvirt group:
 ```
@@ -798,11 +800,11 @@ $ sudo firewall-cmd --list-all --zone public
 
 Add the same ports above to the security rule in the AWS instance
 
-Connect to libvirt daemon from the local host using virt-manager, with a command like:
+Connect to libvirt daemon from the local host using virt-manager.  The command uses the public IP address of the EC2 instance and the _private_ part of the ssh key injected into the instance with terraform:
 ```
-$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=benaka.pem'
+$ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=ssh.pub'
 ```
-This command may take a couple minutes before actually showing the virt-manager interface.
+This command may take a couple minutes to stablish the connection before actually showing the virt-manager interface.
 
 ![Virt manager](images/virt-manager.png)
 
