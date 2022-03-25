@@ -20,6 +20,7 @@
   * [Create the install config yaml file](#create-the-install-config-yaml-file)
   * [Install the Openshift cluster with BMC](#install-the-openshift-cluster-with-bmc) 
   * [Creating the infrastructure with terraform and ansible](#creating-the-infrastructure-with-terraform-and-ansible)
+  * [Destroying the infrastructure in provisioning network design](#destroying-the-infrastructure-in-provisioning-network-design)
 * [Troubleshooting the installation](#troubleshooting-the-installation)
   * [Connecting to the VMs with virt-manager](#connecting-to-the-vms-with-virt-manager) 
 * [Creating the support VM](#creating-the-support-vm)  
@@ -717,6 +718,31 @@ $ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
 * Copy the install-config.yaml file into the directory with the name of the cluster
 
 * Run the [Openshift installer](#install-the-openshift-cluster-with-bmc)
+
+### Destroying the infrastructure in provisioning network design
+
+There are three levels of instrastructure that can be eliminated: The Openshift cluster; the libvirt resources and the AWS resouces.
+
+To destroy the Openshift cluster connect to the provisioning host with the kni user and run a command like:
+```
+provision $ ./openshift-baremetal-install destroy cluster --dir ocp4
+```
+
+To destroying the libivrt resources if they were created with terraform, go to the **Terraform/libvirt** directory in the controlling host and run a command with the same options that were used to create them, but using the **destroy** subcommand instead.
+```
+$ terraform destroy -var-file monaco.vars
+```
+To destroy the libvirt resources manually, connect to the EC2 instance and destroy and undefine all libvirt resources: VMs, volumes, networks, storage pool,etc.  Check the list of [created resources](Terraform/libvirt#created-resources)   Check the `virsh --help` for details on how to do it.
+
+Destroying the libvirt resources will also destroy the Openshift cluster if it was still running.
+
+To destroy the AWS resources if they were created with terraform, go to the **Terraform** directory in the controlling host and run a command with the same options that were used to create them, but using the **destroy** subcommand:
+```
+$ terraform destroy -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
+```
+To destroy the AWS resources manually, go to the AWS web console and remove the EC2 instance, the internet gateway, routing table, elastic IP, etc.  Check the list of [created resources](Terraform#resources-created)
+
+Destroying the AWS resources will cause the destruction of the libvirt resources and Openshift cluster that may exist inside the EC2 instance.
 
 ## Troubleshooting the installation
 
