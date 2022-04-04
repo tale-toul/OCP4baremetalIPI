@@ -1393,7 +1393,7 @@ The Openshift cluster resulting from applying the instructions in this document 
 
 One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.
 
-In this documentation a reverse proxy based on NGINX is used.
+In this project a reverse proxy based on NGINX is used.
 
 The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes on port 443 and insecure application routes on port 80.
 
@@ -1409,6 +1409,8 @@ app1.example.com  │        │  app1.ocp4.company.dom │        │
 The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.ocp4.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these two services.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
 A local DNS server based on dnsmasq or adding the names to the locahost file could be used to resolve the console and oauth internal DNS names.
+
+The reverse proxy also supports the websocket protocol used in the web console to show some of the cluster information like the container logs.
 
 Additional details about the NGINX configuration can be found in the [nginx directory](nginx/)
 
