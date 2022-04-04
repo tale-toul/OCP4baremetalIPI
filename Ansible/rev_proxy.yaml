@@ -1,0 +1,108 @@
+---
+- name: Local tasks
+  hosts: 127.0.0.1
+  connection: local
+  become: no
+  tasks:
+    - name: Save terraform variables to a file
+      shell: terraform output |tr '=' ':' > ../Ansible/group_vars/all/terraform_outputs.var
+      args:
+        chdir: ../Terraform
+    - name: Load terraform output variables
+      include_vars:
+        file: group_vars/all/terraform_outputs.var
+    - name: Update inventory file
+      blockinfile:
+        path: inventory
+        block: "{{ baremetal_public_ip }}"
+        insertafter: "[baremetal]"
+    - name: Reload inventory
+      meta: refresh_inventory
+
+- name: Reverse proxy based on NGINX
+  hosts: baremetal
+  gather_facts: no
+  tasks:
+    - name: Load terraform output variables
+      include_vars:
+        dir: group_vars/all
+        extensions:
+          - 'var'
+        ignore_unknown_extensions: yes
+    - name: Install nginx and required packages
+      dnf:
+        name:
+          - nginx
+          - firewalld
+
+    - name: Create directory for NGINX certificate
+      file:
+        path: /etc/pki/nginx/private/
+        owner: nginx
+        mode: 0750
+        state: directory
+    - name: Generate private key for NGINX
+      openssl_privatekey:
+        owner: nginx
+        path: /etc/pki/nginx/private/ocp-{{ item | regex_search('[^*.]+') }}.key
+      loop:
+        - '*.apps'
+        - api
+    - name: Create CSR for NGINX certificate
+      openssl_csr:
+        path: /etc/pki/nginx/{{ item | regex_search('[^*.]+') }}.{{ ext_dns_zone }}.csr
+        privatekey_path: /etc/pki/nginx/private/ocp-{{ item | regex_search('[^*.]+') }}.key
+        common_name: "{{ item  }}.{{ ext_dns_zone }}"
+      loop:
+        - '*.apps'
+        - api
+    - name: Create X509 certificate for NGINX
+      openssl_certificate:
+        path: /etc/pki/nginx/{{ item | regex_search('[^*.]+') }}.{{ ext_dns_zone }}.cert
+        privatekey_path: /etc/pki/nginx/private/ocp-{{ item | regex_search('[^*.]+') }}.key
+        csr_path: /etc/pki/nginx/{{ item | regex_search('[^*.]+') }}.{{ ext_dns_zone }}.csr
+        provider: selfsigned
+      loop:
+        - '*.apps'
+        - api
+
+    - name: Render NGINX configuration file
+      template:
+        src: nginx/ocp4.j2
+        dest: /etc/nginx/conf.d/ocp4.conf
+        mode: 0664
+        owner: nginx
+        group: nginx
+    - name: Allow Apache to listen on tcp port 6443
+      seport:
+        ports: 6443
+        proto: tcp
+        setype: http_port_t
+        state: present
+
+    - name: Enable and start firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+    - name: Enable http and https services in firewall
+      firewalld:
+        service: "{{ item }}"
+        zone: public
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - http
+        - https
+    - name: Set httpd_can_network_connect flag on and keep it persistent across reboots
+      seboolean:
+        name: httpd_can_network_connect
+        state: yes
+        persistent: yes
+
+    - name: Enable and start NGINX service
+      service:
+        name: "nginx"
+        state: started
+        enabled: yes

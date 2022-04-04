@@ -42,6 +42,8 @@
   * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
+  * [Install and set up NGINX with Ansible](#install-and-set-up-nginx-with-ansible)
+  * [Accessing the cluster](#accessing-the-cluster)
 * [Enable Internal Image Registry](#enable-internal-image-registry)
   * [Add Storage to the Worker Nodes](#add-storage-to-the-worker-nodes)
   * [Make the internal image registry operational](#make-the-internal-image-registry-operational)
@@ -694,7 +696,7 @@ $ ./openshift-baremetal-install create cluster --dir ocp4/
 
 The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configured to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
 
-For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the controlling.
+For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the controlling host.
 
 * Go to the [Terraform directory](Terraform/README.md) and follow the instructions to deploy the metal instance and associated components in AWS.
 
@@ -1387,7 +1389,7 @@ $ ./openshift-baremetal-install --dir ocp4/ create cluster
 
 ## External access to Openshift using NGINX
 
-The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts.  This is because the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network created by libvirt and this network is not accessible from outside the physical host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts.  The reason is, despite being a public cluster, the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network which is not accessible from outside the physical host.
 
 One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.
 
@@ -1439,7 +1441,7 @@ Copy the file to /etc/nginx/conf.d/
 ```
 $ sudo cp ocp4.conf /etc/nginx/conf.d/
 ```
-The NGINX configuration file contains the definition for a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__, however the certificate used in this example is obtained from the Openshift cluster default ingress controller which is valid for __apps.ocp4.talnet.net__: 
+The NGINX configuration file contains the definition for a virtual server to access secure application routes, this virtual server definition requires an SSL certificate to encrypt connections between the client and the NGINX server.  This certificate should be valid for the DNS domain served by the virtual server, in the example __apps.ocp4.redhat.com__, however the certificate used in this example is obtained from the Openshift cluster default ingress controller which is valid for __apps.ocp4.tale.net__: 
 
 Extracted the cerfiticate from the OCP 4 cluster, the following command will create two files:
 ```
@@ -1561,6 +1563,9 @@ Reload NGINX configuration to apply the changes
 ```
 $ sudo systemctl reload nginx
 ```
+### Install and set up NGINX with Ansible
+
+The installation and configuration of NGINX can be done using an ansible playbook, check the instructions in section [Install and set up NGINX with Ansible](Ansible/README.md#install-and-set-up-nginx-with ansible)
 
 ### Accessing the cluster
 Accessing the cluster is done the same way as for any other cluster, except that the DNS domain used is the one defined in NGINX virtual servers:

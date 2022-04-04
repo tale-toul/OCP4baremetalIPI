@@ -253,3 +253,26 @@ host worker{{ loop.index0 }} {
 {% endfor %}
 ```
 A similar formating trick is used in terraform, for the same purposes.
+
+## Install and set up NGINX with Ansible
+
+The playbook **rev_proxy.yaml** can be used to install and set up the NGINX reverse proxy automatically.
+
+A specific variable is used in this playbook:
+
+* **ext_dns_zone**.- The external DNS domain for the Openshift cluster.  This is the public domain used to access the cluster through the reverse proxy and must be resolvable from the clientes connecting to the cluster.  
+
+     No default value is defined for this variable.
+
+Other variables are used in the playbook and the jinja2 template that generates the NGINX config file, but they are extracted from the terraform output variables:
+
+* **baremetal_public_ip**.- The public IP address of EC2 metal instance
+* **cluster_name**.- Cluster name that is part of the DNS domain. The complete cluster domain is **<cluster_name>.<ext_dns_zone>** (ocp4.redhat.com)
+* **dns_zone**.- DNS base zone for the Openshift cluster
+
+The playbook creates two self signed x509 certificates, one for the API endpoint and one for the default ingress controller.  Both are valid for the external DNS domain. 
+
+Run the playbook with a command like:
+```
+$ ansible-playbook -i inventory -vvv rev_proxy.yaml -e ext_dns_zone=redhat.com
+```

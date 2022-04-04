@@ -1,0 +1,72 @@
+map $host $host_head {
+  "~^(?<head>[^.]+)\..*" $head;
+  default $host;
+}
+
+#Virtual server for non secured routes
+server {
+  listen 80;
+  server_name *.apps.{{ ext_dns_zone }};
+
+  location / {
+    proxy_set_header Host $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
+    proxy_pass http://{{ ingress_vip }};
+  }
+}
+
+#Virtual server for secured routes
+server {
+  listen 443 ssl default_server;
+
+  server_name *.apps.{{ ext_dns_zone }};
+  ssl_certificate "/etc/pki/nginx/apps.{{ ext_dns_zone }}.cert";
+  ssl_certificate_key "/etc/pki/nginx/private/ocp-apps.key";
+  ssl_session_cache shared:SSL:1m;
+  ssl_session_timeout  10m;
+  ssl_ciphers PROFILE=SYSTEM;
+  ssl_prefer_server_ciphers on;
+
+  location / {
+    proxy_set_header Host $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
+    proxy_ssl_server_name on;
+    proxy_ssl_name $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
+    proxy_pass https://{{ ingress_vip }};
+  }
+}
+
+# Virtual server for secure routes in the internal DNS domain
+server {
+  listen 443 ssl;
+
+  server_name *.apps.{{ cluster_name }}.{{ dns_zone }};
+  ssl_certificate "/etc/pki/nginx/apps.{{ ext_dns_zone }}.cert";
+  ssl_certificate_key "/etc/pki/nginx/private/ocp-apps.key";
+  ssl_session_cache shared:SSL:1m;
+  ssl_session_timeout  10m;
+  ssl_ciphers PROFILE=SYSTEM;
+  ssl_prefer_server_ciphers on;
+
+  location / {
+    proxy_set_header Host $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
+    proxy_ssl_server_name on;
+    proxy_ssl_name $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
+    proxy_pass https://{{ ingress_vip }};
+  }
+}
+
+# Virtual server for the API endpoint
+server {
+  listen 6443 ssl;
+
+  server_name api.{{ ext_dns_zone }};
+  ssl_certificate "/etc/pki/nginx/api.{{ ext_dns_zone }}.cert";
+  ssl_certificate_key "/etc/pki/nginx/private/ocp-api.key";
+  ssl_session_cache shared:SSL:1m;
+  ssl_session_timeout  10m;
+  ssl_ciphers PROFILE=SYSTEM;
+  ssl_prefer_server_ciphers on;
+ 
+  location / {
+    proxy_pass https://{{ api_vip }}:6443;
+  }
+}
