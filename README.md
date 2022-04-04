@@ -1565,7 +1565,7 @@ $ sudo systemctl reload nginx
 ```
 ### Install and set up NGINX with Ansible
 
-The installation and configuration of NGINX can be done using an ansible playbook, check the instructions in section [Install and set up NGINX with Ansible](Ansible/README.md#install-and-set-up-nginx-with ansible)
+The installation and configuration of NGINX can be done using an ansible playbook, check the instructions in section [Install and set up NGINX with Ansible](Ansible/README.md#install-and-set-up-nginx-with-ansible)
 
 ### Accessing the cluster
 Accessing the cluster is done the same way as for any other cluster, except that the DNS domain used is the one defined in NGINX virtual servers:

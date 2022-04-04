@@ -267,7 +267,7 @@ A specific variable is used in this playbook:
 Other variables are used in the playbook and the jinja2 template that generates the NGINX config file, but they are extracted from the terraform output variables:
 
 * **baremetal_public_ip**.- The public IP address of EC2 metal instance
-* **cluster_name**.- Cluster name that is part of the DNS domain. The complete cluster domain is **<cluster_name>.<ext_dns_zone>** (ocp4.redhat.com)
+* **cluster_name**.- Cluster name that is part of the DNS domain. The complete cluster domain is **<cluster_name>.<ext_dns_zone>** for example (ocp4.redhat.com)
 * **dns_zone**.- DNS base zone for the Openshift cluster
 
 The playbook creates two self signed x509 certificates, one for the API endpoint and one for the default ingress controller.  Both are valid for the external DNS domain. 
