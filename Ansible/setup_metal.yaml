@@ -25,13 +25,13 @@
   hosts: baremetal
   gather_facts: no
   tasks:
-    # It seems that using include_vars will limit the variable files to those explicitly mentioned here
     - name: Load terraform output variables
       include_vars:
         dir: group_vars/all
         extensions:
           - 'data'
           - 'var'
+        ignore_unknown_extensions: yes
     - name: Wait for EC2 instance connection to become available
       wait_for_connection:
         timeout: 300

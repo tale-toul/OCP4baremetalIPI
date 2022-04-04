@@ -1,11 +1,11 @@
 ##OUTPUT
 output "baremetal_public_ip" {  
  value       = aws_eip.baremetal_eip.public_ip
- description = "The public IP address of bastion host"
+ description = "The public IP address of EC2 metal instance"
 }
 output "bastion_private_ip" {
   value     = aws_instance.baremetal.private_ip
-  description = "The private IP address of the bastion host"
+  description = "The private IP address of the EC2 metal instance"
 }
 output "region_name" {
  value = var.region_name

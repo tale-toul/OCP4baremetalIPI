@@ -101,7 +101,7 @@ output "dns_backzone_filename" {
 
 output "cluster_name" {
   value = local.cluster_name_nq
-  description = "Cluster name which is part of the DNS domain"
+  description = "Cluster name that is part of the DNS domain"
 }
 
 output "ocp_version" {
