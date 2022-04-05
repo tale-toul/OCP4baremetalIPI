@@ -20,54 +20,54 @@ platform:
     provisioningNetwork: "Disabled"
     externalBridge: baremetal
     hosts:
-      - name: bmipi-master1
+      - name: bmipi-master0
         role: master
         bmc:
           address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/2451…4bc82
           disableCertificateVerification: True
           username: admin
           password: password
-        bootMACAddress: 52:54:00:a9:6d:71
+        bootMACAddress: 52:54:00:74:dc:a0
         rootDeviceHints:
             deviceName: /dev/vda
-      - name: bmipi-master2
+      - name: bmipi-master1
         role: master
         bmc:
           address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336…6ec
           disableCertificateVerification: True
           username: admin
           password: password
-        bootMACAddress: 52:54:00:a9:6d:72
+        bootMACAddress: 52:54:00:74:dc:a1
         rootDeviceHints:
               deviceName: /dev/vda
-      - name: bmipi-master3
+      - name: bmipi-master2
         role: master
         bmc:
           address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/36a1…7cb8e
           disableCertificateVerification: True
           username: admin
           password: password
-        bootMACAddress: 52:54:00:a9:6d:73
+        bootMACAddress: 52:54:00:74:dc:a2
         rootDeviceHints:
               deviceName: /dev/vda
-      - name: bmipi-worker1
+      - name: bmipi-worker0
         role: worker
         bmc:
           address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/11ad…4a489
           disableCertificateVerification: True
           username: admin
           password: password
-        bootMACAddress: 52:54:00:a9:6d:91
+        bootMACAddress: 52:54:00:74:dc:d0
         rootDeviceHints:
               deviceName: /dev/vda
-      - name: bmipi-worker2
+      - name: bmipi-worker1
         role: worker
         bmc:
           address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/639…5a7a4e
           disableCertificateVerification: True
           username: admin
           password: password
-        bootMACAddress: 52:54:00:a9:6d:92
+        bootMACAddress: 52:54:00:74:dc:d1
         rootDeviceHints:
               deviceName: /dev/vda
 pullSecret: ‘’
