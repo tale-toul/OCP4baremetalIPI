@@ -75,6 +75,7 @@
           - gcc
           - libvirt-devel
           - ipmitool
+          - httpd-tools
         state: present
     - name: Enable and start libvirt service
       service:

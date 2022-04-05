@@ -83,13 +83,13 @@ variable "support_net_config_nameserver" {
 }
 
 variable "dns_zone" {
-  description = "DNS base zone for the Openshift cluster"
+  description = "Internal DNS base zone for the Openshift cluster"
   type = string
   default = "tale.net"
 }
 
 variable "cluster_name" {
-  description = "Cluster name which is part of the DNS domain"
+  description = "Cluster name which is part of the internal DNS domain"
   type = string
   default = "ocp4"
 }
@@ -98,6 +98,17 @@ variable "ocp_version" {
   description = "Openshift version number to be deployed"
   type = string
   default = "4.9.5"
+}
+
+variable "architecture" {
+  description = "Architecture style: redfish or VBMC"
+  type = string
+  default = "vbmc"
+
+  validation {
+    condition = var.architecture == "redfish" || var.architecture == "vbmc"
+    error_message = "The architecture style can only be redfish or vbmc."
+  }
 }
 
 #MAC ADDRESSES

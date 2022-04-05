@@ -40,6 +40,7 @@
   * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install configuration yaml file](#create-the-install-configuration-yaml-file)
   * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
+  * [Automatic deployment of infrastructure with ansible and terraform](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
   * [Install and set up NGINX with Ansible](#install-and-set-up-nginx-with-ansible)
@@ -1167,9 +1168,9 @@ Create a user file with a single user for basic HTTP authentication, that will b
 $ htpasswd -c -B -b htusers admin password
 ```
 
-Create the configuration file for the sushy-tools service. A reference file is provided in this repository at __sushy.conf__.  Use the correct values for the SSL certificate path, the http basic users file, etc.
+Create the configuration file for the sushy-tools service. A reference file is provided in this repository at __redfish/sushy.conf__.  Use the correct values for the SSL certificate path, the http basic users file, etc.
 
-The file specified in the section SUSHY_EULATOR_BOOT_LOADER_AP must be present in the system.  In the case of RHEL8 this file belongs to the package edk2-ovmf.
+The file specified in the section SUSHY_EMULATOR_BOOT_LOADER_MAP must be present in the system.  In the case of RHEL8 this file belongs to the package edk2-ovmf.
 
 
 ### Start and test sushy tools
@@ -1386,6 +1387,19 @@ Run the installation from the provisioning host:
 ```
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
 ```
+### Automatic deployment of infrastructure with ansible and terraform
+
+It is possile to create the necessary infrastructure components using terraform templates and ansible playbooks, this simplifies and speeds up the process, and makes it less error prone.
+
+For these instructions to run successfully terraform and ansible must be installed and working in the controlling host.
+
+* Go to the [Terraform directory](Terraform/README.md) and follow the instructions to deploy the metal instance and associated components in AWS.
+
+* Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [Subscribe hosts with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the common ssh key](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal EC2 instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
+
+* Optionally to get more insights about the libvirt resources from an easy to use tool, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
+
+
 
 ## External access to Openshift using NGINX
 

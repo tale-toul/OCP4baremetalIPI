@@ -106,7 +106,7 @@
         - named
         - dhcpd
 
-    - name: Update OS
+    - name: Update OS in support host
       dnf:
         name: "*"
         state: latest
@@ -115,56 +115,27 @@
       reboot:
         reboot_timeout: 600
       when: _os_update.changed == True
-#Set up virtual BMC
-- name: Set up VBMC
+
+#Set up virtual BMC or Red Fish
+- name: Set up VBMC or Red Fish
   hosts: baremetal
   gather_facts: no
   tasks:
-    # It seems that using include_vars will limit the variable files to those explicitly mentioned here
     - name: Load terraform output variables
       include_vars:
         dir: group_vars/all
         extensions:
           - 'data'
           - 'var'
-    - name: Install Virtual BMC
-      pip:
-        name: virtualbmc
-    - name: Copy Virtual BMC systemd unit
-      copy:
-        src: vbmc/vbmcd.service
-        dest: /etc/systemd/system/vbmcd.service
-        owner: root
-        group: root
-        mode: '0644'
-    - name: Enable and start Virtual BMC service
-      systemd:
-        daemon_reload: yes
-        name: vbmcd
-        enabled: yes
-        state: started
-    - name: Create directories for VBMC host config files
-      file:
-        path: /root/.vbmc/{{ item }}
-        state: directory
-      loop: "{{ master_names + worker_names }}"
-    - name: Create vbmc config files for OCP nodes
-      template:
-        src: vbmc/managed_host.j2
-        dest: /root/.vbmc/{{ item }}/config
-      loop: "{{ master_names + worker_names }}"
-      loop_control:
-        index_var: x
-    - name: Allow access to vbmc VMs ports in firewall
-      firewalld:
-        port: "{{ 7000 + x }}/udp"
-        zone: libvirt
-        permanent: yes
-        immediate: yes
-        state: enabled
-      loop: "{{ master_names + worker_names }}"
-      loop_control:
-        index_var: x
+        ignore_unknown_extensions: yes
+    - name: Set up VBMC
+      include_tasks: vbmc/setup_vbmc.yaml
+      when: architecture == "vbmc"
+
+    - name: Place holder for redfish architecture option
+      pause:
+        prompt: "Architecture type selected: Red Fish"
+      when: architecture == "redfish"
 
     - name: Enable access to the KVM Virtual Machines VNC displays
       firewalld:
@@ -178,17 +149,18 @@
       loop_control:
         index_var: x
 
+#Set up provision VM
 - name: Set up provision VM
   hosts: provision
   gather_facts: no
   tasks:
-    # It seems that using include_vars will limit the variable files to those explicitly mentioned here
     - name: Load terraform output variables
       include_vars:
         dir: group_vars/all
         extensions:
           - 'data'
           - 'var'
+        ignore_unknown_extensions: yes
     - name: Wait for provision VM connection to become available
       wait_for_connection:
         timeout: 300
@@ -313,7 +285,7 @@
       args:
         chdir: /home/kni
         creates: /home/kni/openshift-baremetal-install
-    - name: Update OS
+    - name: Update OS in provision host
       dnf:
         name: "*"
         state: latest

@@ -108,3 +108,8 @@ output "ocp_version" {
   value = var.ocp_version
   description = "Openshift version number to be deployed"
 }
+
+output "architecture" {
+  value = var.architecture
+  description = "Architecture style: redfish or VBMC"
+}

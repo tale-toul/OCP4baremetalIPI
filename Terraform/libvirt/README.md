@@ -124,6 +124,10 @@ The list of variables its purpose and default value are:
 
      Default value: 52:54:00:a9:6d:9
 
+* **architecture**.- This variable defines whether a provisioning network will be used (architecture = vbmc) or not (architecture = redfish).  Only two values are accepted: **vbmc** and **redfish**.  Depending on the value used, different infrastructure components will be created to support the chosen architecture model.
+
+     Default value: vbmc
+
 ### Assigning values to input variables
 
 There are 3 different ways in which to assign new values to the input variables describe above:

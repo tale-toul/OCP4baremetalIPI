@@ -1,0 +1,39 @@
+---
+- name: Install Virtual BMC
+  pip:
+    name: virtualbmc
+- name: Copy Virtual BMC systemd unit
+  copy:
+    src: vbmc/vbmcd.service
+    dest: /etc/systemd/system/vbmcd.service
+    owner: root
+    group: root
+    mode: '0644'
+- name: Enable and start Virtual BMC service
+  systemd:
+    daemon_reload: yes
+    name: vbmcd
+    enabled: yes
+    state: started
+- name: Create directories for VBMC host config files
+  file:
+    path: /root/.vbmc/{{ item }}
+    state: directory
+  loop: "{{ master_names + worker_names }}"
+- name: Create vbmc config files for OCP nodes
+  template:
+    src: vbmc/managed_host.j2
+    dest: /root/.vbmc/{{ item }}/config
+  loop: "{{ master_names + worker_names }}"
+  loop_control:
+    index_var: x
+- name: Allow access to vbmc VMs ports in firewall
+  firewalld:
+    port: "{{ 7000 + x }}/udp"
+    zone: libvirt
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop: "{{ master_names + worker_names }}"
+  loop_control:
+    index_var: x
