@@ -6,7 +6,7 @@ map $host $host_head {
 #Virtual server for non secured routes
 server {
   listen 80;
-  server_name *.apps.{{ ext_dns_zone }};
+  server_name *.{{ ext_dns_zone }};
 
   location / {
     proxy_set_header Host $host_head.apps.{{ cluster_name }}.{{ dns_zone }};
@@ -18,7 +18,7 @@ server {
 server {
   listen 443 ssl default_server;
 
-  server_name *.apps.{{ ext_dns_zone }};
+  server_name *.{{ ext_dns_zone }};
   ssl_certificate "/etc/pki/nginx/apps.{{ ext_dns_zone }}.cert";
   ssl_certificate_key "/etc/pki/nginx/private/ocp-apps.key";
   ssl_session_cache shared:SSL:1m;

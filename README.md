@@ -1406,7 +1406,9 @@ app1.example.com  │        │  app1.ocp4.company.dom │        │
                   └────────┘                        └────────┘
 ```
 
-The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.ocp4.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these two services.  The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.ocp4.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these two services.  
+
+The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL and the new DNS names must be resolvable from inside the cluster: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
 A local DNS server based on dnsmasq or adding the names to the locahost file could be used to resolve the console and oauth internal DNS names.
 
@@ -1570,7 +1572,7 @@ $ sudo systemctl reload nginx
 The installation and configuration of NGINX can be done using an ansible playbook, check the instructions in section [Install and set up NGINX with Ansible](Ansible/README.md#install-and-set-up-nginx-with-ansible)
 
 ### Accessing the cluster
-Accessing the cluster is done the same way as for any other cluster, except that the DNS domain used is the one defined in NGINX virtual servers:
+Accessing the cluster is done in the same way as for any other cluster, except that the DNS domain used is the external dns zone defined in NGINX virtual servers:
 
 * Using the __oc__ client
 
@@ -1589,9 +1591,9 @@ Using project "default".
 ```
 * Access to application routes
 
-    For both secure and non secure routes, the URL must contain the external DNS domain defined in the NGINX virtual servers for each type of routes, in the general case this domain will be the same
+    For secure and non secure routes, the URL must contain the external DNS domain defined in the NGINX virtual servers.  In the following example the external domain is **redhat.com**:
 ```
-$ curl http://httpd-example-bandido.apps.ocp4.redhat.com/
+$ curl http://httpd-example-bandido.redhat.com/
 ```
 * Access to the web console and oauth service
 
