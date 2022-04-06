@@ -1,0 +1,20 @@
+[Install]
+WantedBy = multi-user.target
+
+[Unit]
+Description=Sushy Libvirt emulator
+After = libvirtd.service
+After = syslog.target
+After = network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/sushy-emulator --config /etc/sushy-tools/sushy.conf
+StandardOutput=syslog
+StandardError=syslog
+TimeoutSec = 120
+User = root
+Group = root
+ExecReload = /bin/kill -HUP $MAINPID
+RestartSec = 2
+Restart = on-failure

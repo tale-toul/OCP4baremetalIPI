@@ -100,6 +100,7 @@ It is recommended to encrypt this file with ansible-vault:
 $ ansible-vault encrypt --vault-id vault-id vbmc_credentials.data
 ```
 * A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) for the Openshift installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  
+* In case of redfish based architecture, the network port where sushy tools (redfish for libvirt) provides service in the metal instance is defined in the variable **sushy_tools_port**, it has a default value of 8080.
 
 ### Running the playbook for libvirt VMs
 

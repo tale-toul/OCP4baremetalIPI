@@ -17,6 +17,7 @@
         extensions:
           - 'data'
           - 'var'
+        ignore_unknown_extensions: yes
     - name: Update support group in inventory file
       blockinfile:
         path: inventory
@@ -132,9 +133,8 @@
       include_tasks: vbmc/setup_vbmc.yaml
       when: architecture == "vbmc"
 
-    - name: Place holder for redfish architecture option
-      pause:
-        prompt: "Architecture type selected: Red Fish"
+    - name: Set up sushy tools (redfish)
+      include_tasks: redfish/setup_sushy.yaml
       when: architecture == "redfish"
 
     - name: Enable access to the KVM Virtual Machines VNC displays
