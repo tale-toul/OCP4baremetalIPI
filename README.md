@@ -35,7 +35,7 @@
   * [Start and test sushy tools](#start-and-test-sushy-tools) 
   * [Add firewall rules to allow access to sushy-tools](#add-firewall-rules-to-allow-access-to-sushy-tools) 
   * [Setup DNS service](#setup-dns-service) 
-  * [Create the provisioning VM](#create-the-provisioning-vm)
+  * [Create the provisioning VM for redfish](#create-the-provisioning-vm-for-redfish)
   * [Create the empty cluster hosts](#create-the-empty-cluster-hosts) 
   * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install configuration yaml file](#create-the-install-configuration-yaml-file)
@@ -1222,7 +1222,7 @@ Alternatively the support VM can be imported following the instructions in secti
 
 The DHCP service is optional but recommended, it is used to provide network configuration for the provisioning VM and the nodes in the OCP cluster.
 
-### Create the provisioning VM
+### Create the provisioning VM for redfish
 
 Create the provisioning VM following the instructions in section [Create the provisioning VM](#create-the-provisioning-vm), replace the virt-install command with the following one, which is slightly different; apply the other creation steps unchanged: 
 

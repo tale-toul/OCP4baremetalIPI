@@ -38,6 +38,7 @@ resource "libvirt_network" "chucky" {
 }
 
 resource "libvirt_network" "provision" {
+  count = var.architecture == "vbmc" ? 1 : 0
   name = "provision"
   mode = "none"
   addresses = [var.provision_net_addr]
@@ -107,7 +108,7 @@ resource "libvirt_domain" "provision_domain" {
   }
 
   network_interface {
-    network_id = libvirt_network.provision.id
+    network_id = libvirt_network.provision[0].id
   }
   network_interface {
     network_id = libvirt_network.chucky.id
@@ -157,7 +158,7 @@ resource "libvirt_domain" "master_domains" {
   }
 
   network_interface {
-    network_id = libvirt_network.provision.id
+    network_id = libvirt_network.provision[0].id
     mac        = "${var.master_provision_mac_base}${count.index}"
   }
   network_interface {
@@ -209,7 +210,7 @@ resource "libvirt_domain" "worker_domains" {
   }
 
   network_interface {
-    network_id = libvirt_network.provision.id
+    network_id = libvirt_network.provision[0].id
     mac        = format("${var.worker_provision_mac_base}%x",count.index)
   }
   network_interface {
