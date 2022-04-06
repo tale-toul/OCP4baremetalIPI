@@ -184,20 +184,16 @@ $ terraform apply -var-file monaco.vars
 
 ## Created resources
 The template creates the following components:
-* A storage pool.- This is the defalt storage pool, of type directory, using /var/lib/libvirt/images directory
+* A storage pool.- This is the default storage pool, of type directory, using /var/lib/libvirt/images directory
 * 2 networks, DHCP is disable in both networks:
   * chucky.- this is the routable network 
   * provision.- this is the provisioning network, not routable 
-* A disk volume using a RHEL8 image, this will be used as the base image for all the VMs that will be created later.
-* A disk volume based on the RHEL8 base volume that will be the OS disk for the support VM.  This volume has a size of 120GB, expressed in bytes.  Cloud init will grow the size of the base volume disk to the 120GB specified here
-* A template file containing the cloud init user data configuration file for the support VM
-* A template file containint the cloud init network data configuration file for the support VM
-* A cloud init disk based on the contents of the above two configuration files
-* A provisioning VM.  It is initialized with the cloud init configuration on first boot; it is connected to both networks (chucky and provision); it uses the disk volume defined earlier
-* A disk volume based on the RHEL8 base volume that will be the OS disk for the provisioning VM.  
-* A template file containing the cloud init user data configuration file for the provisioning VM.
-* A template file containint the cloud init network data configuration file for the provisioning VM.
-* A cloud init disk based on the contents of the above two configuration files
+* A base disk volume using a RHEL8 image, this will be used as the base image for all the VMs that are created later.
+* A disk volume based on the RHEL8 base volume that is used as the OS disk for the provision VM.  This volume has a size of 120GB, expressed in bytes.  Cloud init will grow the size of the base volume disk to the 120GB specified here
+* A cloud init disk for the provision VM, containing the user data and network configuration defined by two template files.
+* A provision VM.  It is initialized with the cloud init configuration on first boot; it is connected to networks chucky and provision; it uses the disk volume defined earlier
+* A disk volume based on the RHEL8 base volume that will be the OS disk for the support VM.  
+* A cloud init disk for the support VM, containing the user data and network configuration defined by two template files.
 * A support VM.  This VM will run the DHCP and DNS services for the OCP cluster. 
 * 3 empty disk volumes that will be the OS disks for the master VMs. 
 * 3 master VMs.
@@ -239,7 +235,7 @@ growpart:
   ignore_growroot_disabled: false
 ```
 
-The network configuration is provided in a different file, as the [NoCloud datasource documentation](https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html) states, the toplevel network key is not used in the file:
+The network configurations are provided in separate files, as the [NoCloud datasource documentation](https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html) states, the toplevel network key is not used in the file:
 ```
 version: 1
 config:
@@ -252,6 +248,42 @@ config:
     gateway: ${gateway}
     type: static
 ```
+The network configuration [template](https://www.terraform.io/language/functions/templatefile) for the provision VM uses [terraform conditional statements](https://www.terraform.io/language/expressions/strings#directives) so the rendered configuration is adapted depending on whether a provisioning network is required or not.
+
+If the variable **architecture=vbmc** the provisioning network is used so two network interfaces are configured.  If the variable has any other value, actually the variable has a validation statement that only allows it to get the values **vbmc** and **redfish**, then only one network interface will be configured in the routable network using DHCP:
+
+```
+version: 1
+config:
+- type: physical
+  name: eth0
+- type: bridge
+%{~ if architecture == "vbmc"}
+  name: provision
+%{~ else }
+  name: chucky
+%{ endif }
+  bridge_interfaces:
+    - eth0
+  subnets:
+%{~ if architecture == "vbmc"}
+    - type: static
+      address: ${ironiq_addr}
+%{~ else }
+    - type: dhcp
+%{ endif }
+%{~ if architecture == "vbmc"}
+- type: physical
+  name: eth1
+- type: bridge
+  name: chucky
+  bridge_interfaces:
+    - eth1
+  subnets:
+    - type: dhcp
+%{~ endif ~}
+```
+
 ## Dependencies 
 This terraform template depends on the output variables from the main terraform template that creates the metal instance in AWS.  The output variables are obtained from a local backend:
 

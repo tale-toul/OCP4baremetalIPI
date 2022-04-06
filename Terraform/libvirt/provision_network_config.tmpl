@@ -3,12 +3,21 @@ config:
 - type: physical
   name: eth0
 - type: bridge
+%{~ if architecture == "vbmc"}
   name: provision
+%{~ else }
+  name: chucky
+%{ endif }
   bridge_interfaces:
     - eth0
   subnets:
+%{~ if architecture == "vbmc"}
     - type: static
       address: ${ironiq_addr}
+%{~ else }
+    - type: dhcp
+%{ endif }
+%{~ if architecture == "vbmc"}
 - type: physical
   name: eth1
 - type: bridge
@@ -17,3 +26,4 @@ config:
     - eth1
   subnets:
     - type: dhcp
+%{~ endif ~}

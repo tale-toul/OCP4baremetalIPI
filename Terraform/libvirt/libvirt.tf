@@ -66,27 +66,11 @@ resource "libvirt_volume" "provision_volume" {
   size = 128849018880
 }
 
-data "template_file" "host_config" {
-  template = file("${path.module}/provision_cloud_init.cfg")
-
-  vars = {
-    auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}")
-  }
-}
-
-data "template_file" "net_config" {
-  template = file ("${path.module}/provision_network_config.cfg")
-
-  vars = {
-    ironiq_addr = local.provision_ironiq_addr
-  }
-}
-
 resource "libvirt_cloudinit_disk" "provision_cloudinit" {
   name = "provision.iso"
   pool = libvirt_pool.pool_default.name
-  user_data = data.template_file.host_config.rendered
-  network_config = data.template_file.net_config.rendered
+  user_data = templatefile("${path.module}/provision_cloud_init.tmpl", { auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}") })
+  network_config = templatefile("${path.module}/provision_network_config.tmpl", { ironiq_addr = local.provision_ironiq_addr, architecture = var.architecture  })
 }
 
 #Provisioning VM
@@ -244,29 +228,11 @@ resource "libvirt_volume" "support_volume" {
   size = 53687091200
 }
 
-data "template_file" "support_config" {
-  template = file("${path.module}/support_cloud_init.cfg")
-
-  vars = {
-    auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}")
-  }
-}
-
-data "template_file" "support_net_config" {
-  template = file ("${path.module}/support_network_config.cfg")
-
-  vars = {
-    address = "${local.support_host_ip}/24"
-    nameserver = var.support_net_config_nameserver
-    gateway = local.chucky_gateway
-  }
-}
-
 resource "libvirt_cloudinit_disk" "support_cloudinit" {
   name = "support.iso"
   pool = libvirt_pool.pool_default.name
-  user_data = data.template_file.support_config.rendered
-  network_config = data.template_file.support_net_config.rendered
+  user_data = templatefile("${path.module}/support_cloud_init.tmpl", { auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}") })
+  network_config = templatefile("${path.module}/support_network_config.tmpl", { address = "${local.support_host_ip}/24", nameserver = var.support_net_config_nameserver, gateway = local.chucky_gateway })
 }
 
 #Support VM
