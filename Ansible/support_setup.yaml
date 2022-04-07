@@ -60,7 +60,7 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
-    - name: Install required packages
+    - name: Install required packages in support VM
       dnf:
         name:
           - bind
@@ -176,7 +176,7 @@
         url: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
         dest: /etc/yum.repos.d/hashicorp.repo
         mode: '0644'
-    - name: Install required packages
+    - name: Install required packages in provision VM
       dnf:
         name:
           - '@virtualization-host-environment'

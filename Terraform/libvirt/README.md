@@ -320,3 +320,78 @@ network_interface {
 }
 ```
 A similar formating trick is used in ansible, for the same purposes.
+
+## Troubleshooting
+
+### Missing iptables chains
+
+Sometimes during the creation of resources an error like the following appears:
+```
+ Error: error creating libvirt network: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface chucky --protocol tcp --destination-port 67 --jump ACCEPT: iptables: No chain/target/match by that name.
+│ 
+│ 
+│   with libvirt_network.chucky,
+│   on libvirt.tf line 28, in resource "libvirt_network" "chucky":
+│   28: resource "libvirt_network" "chucky" {
+```
+Checking the firewall rules in the metal instance shows an empty list, which matches the error above that some table target or match is missing:
+```
+$ sudo iptables -L -nv
+Chain INPUT (policy ACCEPT 252K packets, 794M bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+
+Chain OUTPUT (policy ACCEPT 190K packets, 12M bytes)
+ pkts bytes target     prot opt in     out     source               destination 
+```
+Checking the libvirtd service also shows the iptables error messages:
+```
+$ sudo systemctl status libvirtd
+● libvirtd.service - Virtualization daemon
+   Loaded: loaded (/usr/lib/systemd/system/libvirtd.service; enabled; vendor preset: enabled)
+   Active: active (running) since Thu 2022-04-07 07:07:06 UTC; 11min ago
+     Docs: man:libvirtd(8)
+           https://libvirt.org
+ Main PID: 42387 (libvirtd)
+    Tasks: 19 (limit: 32768)
+   Memory: 806.6M
+   CGroup: /system.slice/libvirtd.service
+           ├─42387 /usr/sbin/libvirtd --timeout 120
+           ├─43705 /usr/sbin/dnsmasq --conf-file=/var/lib/libvirt/dnsmasq/default.conf --leasefile-ro --dhcp-script=/usr/libexec/libvirt_leaseshelper
+           └─43707 /usr/sbin/dnsmasq --conf-file=/var/lib/libvirt/dnsmasq/default.conf --leasefile-ro --dhcp-script=/usr/libexec/libvirt_leaseshelper
+
+Apr 07 07:07:09 ip-172-20-8-165.ec2.internal libvirtd[42387]: libvirt version: 6.0.0, package: 37.1.module+el8.5.0+13858+39fdc467 (Red Hat, Inc. <http://bugzilla.redhat.com/bugzilla>, 2022->
+Apr 07 07:07:09 ip-172-20-8-165.ec2.internal libvirtd[42387]: hostname: ip-172-20-8-165.ec2.internal
+Apr 07 07:07:09 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface virbr0 >
+Apr 07 07:09:30 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface chucky >
+Apr 07 07:09:30 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface provisi>
+Apr 07 07:12:00 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface chucky >
+Apr 07 07:12:00 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface provisi>
+Apr 07 07:13:51 ip-172-20-8-165.ec2.internal libvirtd[42387]: failed to remove pool '/var/lib/libvirt/images': Device or resource busy
+Apr 07 07:14:43 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface provisi>
+Apr 07 07:14:44 ip-172-20-8-165.ec2.internal libvirtd[42387]: internal error: Failed to apply firewall rules /usr/sbin/iptables -w --table filter --insert LIBVIRT_INP --in-interface chucky
+```
+To recreate the missing iptables rules, tables, etc. Restart the libvirtd service:
+```
+$ sudo systemctl restart libvirtd
+```
+If the service starts successfully a long list of iptables rules and chains are created, including several LIBVIRT\_<suffix> chains:
+```
+$ sudo iptables -L -nv
+Chain INPUT (policy ACCEPT 537K packets, 1590M bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   66  4592 LIBVIRT_INP  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+...
+Chain LIBVIRT_INP (1 references)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 ACCEPT     udp  --  virbr0 *       0.0.0.0/0            0.0.0.0/0            udp dpt:53
+...
+Chain LIBVIRT_OUT (1 references)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 ACCEPT     udp  --  *      virbr0  0.0.0.0/0            0.0.0.0/0            udp dpt:53
+...
+```
+
+
