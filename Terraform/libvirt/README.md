@@ -185,20 +185,20 @@ $ terraform apply -var-file monaco.vars
 ## Created resources
 The template creates the following components:
 * A storage pool.- This is the default storage pool, of type directory, using /var/lib/libvirt/images directory
-* 2 networks, DHCP is disable in both networks:
-  * chucky.- this is the routable network 
-  * provision.- this is the provisioning network, not routable 
+* 1 or 2 networks, depending on the value of the **architecture** variable.  DHCP is disable in both networks:
+  * chucky.- this is the routable network.  This is always created.
+  * provision.- this is the provisioning network, not routable.  Created when `architecture=vbmc` which is the default value.
 * A base disk volume using a RHEL8 image, this will be used as the base image for all the VMs that are created later.
 * A disk volume based on the RHEL8 base volume that is used as the OS disk for the provision VM.  This volume has a size of 120GB, expressed in bytes.  Cloud init will grow the size of the base volume disk to the 120GB specified here
 * A cloud init disk for the provision VM, containing the user data and network configuration defined by two template files.
-* A provision VM.  It is initialized with the cloud init configuration on first boot; it is connected to networks chucky and provision; it uses the disk volume defined earlier
+* A provision VM.  It is initialized with cloud init on first boot; it is connected to networks chucky and provision (if available); it uses the disk volume defined earlier
 * A disk volume based on the RHEL8 base volume that will be the OS disk for the support VM.  
 * A cloud init disk for the support VM, containing the user data and network configuration defined by two template files.
-* A support VM.  This VM will run the DHCP and DNS services for the OCP cluster. 
+* A support VM.  This VM runs the DHCP and DNS services for the OCP cluster.  It is only connected to the routable (chucky) network.
 * 3 empty disk volumes that will be the OS disks for the master VMs. 
-* 3 master VMs.
+* 3 master VMs. Connected to the routable and provision (if available) networks.
 * A group of empty disk volumes that will be the OS disks for the worker VMs.  The ammount created depends on the variable number_of_workers.
-* A group of worker VMs. The ammount created depends on the variable number_of_workers.
+* A group of worker VMs.  Connected to the routable and provision (if available) networks.  The ammount created depends on the variable number_of_workers.
 
 ## Cloud init configuration
 Reference documentation and examples:
@@ -320,6 +320,33 @@ network_interface {
 }
 ```
 A similar formating trick is used in ansible, for the same purposes.
+
+## Conditional creation of the provision network
+
+Depending on the value of the input variable **architecture** the provision network is created or not.
+
+If **architecture="vbmc"**, which is the default, the routable and the provision networks are created and the provision host, master and worker nodes are connected to both of them.
+
+If **architecture="redfish"** only the routable network is created and all hosts are connected to it.
+
+The logic is implemented using the count trick.  When **architecture="vbmc"** a count of one resource is created, otherwise a count of zero resources is created:
+```
+resource "libvirt_network" "provision" {
+  count = var.architecture == "vbmc" ? 1 : 0
+...
+```
+The creation of the provision and cluster master and workers has to take into account if the provision network exists or not to create a network interface connected to that network, or not.  
+The logic to create the provision NIC uses a **dynamic** block with a for_each loop.  The list of network resources in **libvirt_network.provision** is converted to a set which is what for_each can use.  That list can only have either 1 or zero elements as was described above, in case the list has no element the NIC will not be created, but if the list has one element, the NIC will be created.  It is a similar logic as the use of _count_ earlier, but used for blocks within a resource, where _count_ cannot be used.
+```
+  dynamic "network_interface" {
+    for_each = toset(libvirt_network.provision[*].id)
+    content {
+      network_id = network_interface.key
+    }
+  }
+```
+The cloud init network configuration applied to the provision VM also changes depending on whether the provision network exists or not.  The details of this configuration are explained in section [Cloud init configuration](#cloud-init-configuration)
+
 
 ## Troubleshooting
 

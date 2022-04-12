@@ -1,0 +1,53 @@
+apiVersion: v1
+baseDomain: {{ dns_zone }}
+metadata:
+  name: {{ cluster_name }}
+networking:
+  networkType: OVNKubernetes
+  machineCIDR: {{ chucky_net_addr }}
+compute:
+- name: worker
+  replicas: {{ number_of_workers }}
+controlPlane:
+  name: master
+  replicas: 3
+  platform:
+        baremetal: {}
+platform:
+  baremetal:
+    apiVIP: {{ api_vip }}
+    ingressVIP: {{ ingress_vip }}
+    provisioningNetwork: "Disabled"
+    externalBridge: chucky
+    hosts:
+{% for item in master_names  %}
+      - name: {{ item }}
+        role: master
+        bmc:
+          address: redfish-virtualmedia://{{ baremetal_private_ip }}:{{ sushy_tools_port }}/redfish/v1/Systems/{{ hostvars[baremetal_public_ip]['masters_uuid']['results'][loop.index0]['stdout'] }}
+          disableCertificateVerification: True
+          username: admin
+          password: "{{ hostvars[baremetal_public_ip]['sushy_admin_passwd'] }}"
+        bootMACAddress: {{ master_chucky_mac_base }}{{ loop.index0 }}
+        bootMode: legacy
+        hardwareProfile: libvirt
+        rootDeviceHints:
+            deviceName: /dev/vda
+{% endfor %}
+{% for item in worker_names %}
+      - name: {{ item }}
+        role: worker
+        bmc:
+          address: redfish-virtualmedia://{{ baremetal_private_ip }}:{{ sushy_tools_port }}/redfish/v1/Systems/{{ hostvars[baremetal_public_ip]['workers_uuid']['results'][loop.index0]['stdout'] }}
+          disableCertificateVerification: True
+          username: admin
+          password: "{{ hostvars[baremetal_public_ip]['sushy_admin_passwd'] }}"
+        bootMACAddress: {{ worker_chucky_mac_base }}{{ '%x' % loop.index0 }}
+        bootMode: legacy
+        hardwareProfile: libvirt
+        rootDeviceHints:
+            deviceName: /dev/vda
+{% endfor %}
+pullSecret: '{{ lookup('file', 'pull-secret')  }}'
+sshKey: |
+  {{ lookup('file', '../Terraform/'+ssh_certificate)  }}

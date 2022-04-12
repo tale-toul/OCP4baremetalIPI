@@ -91,9 +91,13 @@ resource "libvirt_domain" "provision_domain" {
     mode = "host-passthrough"
   }
 
-  network_interface {
-    network_id = libvirt_network.provision[0].id
+  dynamic "network_interface" {
+    for_each = toset(libvirt_network.provision[*].id)
+    content {
+      network_id = network_interface.key
+    }
   }
+
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = var.provision_mac
@@ -121,6 +125,7 @@ resource "libvirt_domain" "provision_domain" {
 resource "libvirt_volume" "master_volumes" {
   count = 3
   name = "master${count.index}.qcow2"
+  pool = "default"
   format = "qcow2"
   #80GB
   size = 85899345920
@@ -141,10 +146,14 @@ resource "libvirt_domain" "master_domains" {
     volume_id = libvirt_volume.master_volumes[count.index].id
   }
 
-  network_interface {
-    network_id = libvirt_network.provision[0].id
-    mac        = "${var.master_provision_mac_base}${count.index}"
+  dynamic "network_interface" {
+    for_each = toset(libvirt_network.provision[*].id)
+    content {
+      network_id = network_interface.key
+      mac        = "${var.master_provision_mac_base}${count.index}"
+    }
   }
+
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = "${var.master_chucky_mac_base}${count.index}"
@@ -193,10 +202,14 @@ resource "libvirt_domain" "worker_domains" {
     volume_id = libvirt_volume.worker_volumes[count.index].id
   }
 
-  network_interface {
-    network_id = libvirt_network.provision[0].id
-    mac        = format("${var.worker_provision_mac_base}%x",count.index)
+  dynamic "network_interface" {
+    for_each = toset(libvirt_network.provision[*].id)
+    content {
+      network_id = network_interface.key
+      mac        = format("${var.worker_provision_mac_base}%x",count.index)
+    }
   }
+
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = format("${var.worker_chucky_mac_base}%x",count.index)

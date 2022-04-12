@@ -77,19 +77,19 @@
           - ipmitool
           - httpd-tools
         state: present
-    - name: Enable and start libvirt service
+    - name: Enable and start firewalld service
       service:
-        name: libvirtd
-        state: started 
+        name: firewalld
+        state: started
         enabled: yes
     - name: Add ec2-user to libvirt group
       user:
         name: ec2-user
         groups: libvirt
         append: yes
-    - name: Enable and start firewalld service
+    - name: Enable and start libvirt service
       service:
-        name: firewalld
+        name: libvirtd
         state: started
         enabled: yes
     - name: Update OS and reboot host

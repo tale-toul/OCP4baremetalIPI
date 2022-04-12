@@ -86,7 +86,7 @@ Operating System has been updated.  Reboot the host? (yes|no):
 
 A separate ansible playbook file (**support_setup.yaml**) is used to configure the KVM virtual machines created previously with terraform, in particular the provisioning and support VMs.
 
-This playbook shares many of the same tasks and requirements as the one defined in the file **setup_metal.yaml**:
+This playbook has the following requirements:
 
 * An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
 * An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
@@ -193,6 +193,47 @@ The final task enables and starts the DHCP and DNS services:
   loop: 
     - named
     - dhcpd
+```
+
+### Set up virtual BMC or Red Fish
+
+Two architecture options exist when the libvirt infrastrucutre components are created: **vbmc** and **redfish**.  Depending on the architecture selected a different service will be responsible to manage the VMs: **VMC** or **Red Fish**
+
+The **support_setup.yaml** plabook contains a play that is run agains the baremental EC2 instance and is responsible of the installation and set up of the correct service for the selected architecture, namely vbmcd or sushy-tools.  
+
+The main part of the play uses the _when_ coditional to load an independent file containing the tasks to install and set up the coresponding service:
+
+```
+- name: Set up VBMC or Red Fish
+..
+    - name: Set up VBMC
+      include_tasks: vbmc/setup_vbmc.yaml
+      when: architecture == "vbmc"
+
+    - name: Set up sushy tools (redfish)
+      include_tasks: redfish/setup_sushy.yaml
+      when: architecture == "redfish"
+```
+The playbook that sets up the provision VM contains tasks to render the intall-config.yaml file according to the architecture selected, only one of these two tasks will run.
+```
+- name: Set up provision VM
+...
+    - name: Render install-config template for provisioning based architecture
+      template:
+        src: vbmc/install-config.j2
+        dest: /home/kni/install-config.yaml
+        owner: kni
+        group: kni
+        mode: 0644
+      when: architecture == "vbmc"
+    - name: Render install-config template for redfish based architecture
+      template:
+        src: redfish/install-config.j2
+        dest: /home/kni/install-config.yaml
+        owner: kni
+        group: kni
+        mode: 0644
+      when: architecture == "redfish"
 ```
 
 ### Extracting the main release image URI 

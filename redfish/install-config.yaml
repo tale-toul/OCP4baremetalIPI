@@ -23,52 +23,62 @@ platform:
       - name: bmipi-master0
         role: master
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/2451…4bc82
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/2451...4bc82
           disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:74:dc:a0
+        bootMode: legacy
+        hardwareProfile: libvirt
         rootDeviceHints:
             deviceName: /dev/vda
       - name: bmipi-master1
         role: master
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336…6ec
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/a95336...6ec
           disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:74:dc:a1
+        bootMode: legacy
+        hardwareProfile: libvirt
         rootDeviceHints:
-              deviceName: /dev/vda
+            deviceName: /dev/vda
       - name: bmipi-master2
         role: master
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/36a1…7cb8e
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/36a1...7cb8e
           disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:74:dc:a2
+        bootMode: legacy
+        hardwareProfile: libvirt
         rootDeviceHints:
-              deviceName: /dev/vda
+            deviceName: /dev/vda
       - name: bmipi-worker0
         role: worker
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/11ad…4a489
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/11ad...4a489
           disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:74:dc:d0
+        bootMode: legacy
+        hardwareProfile: libvirt
         rootDeviceHints:
-              deviceName: /dev/vda
+            deviceName: /dev/vda
       - name: bmipi-worker1
         role: worker
         bmc:
-          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/639…5a7a4e
+          address: redfish-virtualmedia://172.31.75.189:8080/redfish/v1/Systems/639...5a7a4e
           disableCertificateVerification: True
           username: admin
           password: password
         bootMACAddress: 52:54:00:74:dc:d1
+        bootMode: legacy
+        hardwareProfile: libvirt
         rootDeviceHints:
-              deviceName: /dev/vda
+            deviceName: /dev/vda
 pullSecret: ‘’
 sshKey: |

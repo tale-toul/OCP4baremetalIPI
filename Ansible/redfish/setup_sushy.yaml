@@ -32,8 +32,8 @@
 - name: Generate random password for sushy tools admin user
   set_fact:
     sushy_admin_passwd: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
-- name: Create htpasswd file for sushy tools authentication
   no_log: true
+- name: Create htpasswd file for sushy tools authentication
   htpasswd:
     crypt_scheme: bcrypt
     path: /etc/sushy-tools/htusers
@@ -69,3 +69,17 @@
     permanent: yes
     immediate: yes
     state: enabled
+
+# The UUIDs are used later as part of the install-config.yaml file
+- name: Save UUIDs for master terraform VMs
+  command: virsh -q domuuid {{ item }}
+  loop: "{{ master_names }}"
+  register: _masters_uuid
+- set_fact:
+    masters_uuid: "{{ _masters_uuid }}"
+- name: Save UUIDs for worker terraform VMs
+  command: virsh -q domuuid {{ item }}
+  loop: "{{ worker_names }}"
+  register: _workers_uuid
+- set_fact:
+    workers_uuid: "{{ _workers_uuid }}"

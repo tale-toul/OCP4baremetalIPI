@@ -40,6 +40,7 @@
   * [Prepare the provision VM](#prepare-the-provision-vm) 
   * [Create the install configuration yaml file](#create-the-install-configuration-yaml-file)
   * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
+  * [Set up UEFI boot mode](#set-up-uefi-boot-mode)
   * [Automatic deployment of infrastructure with ansible and terraform](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
@@ -51,15 +52,15 @@
 
 ## Introduction
 
-This repository contains documentation and supporting files on how to deploy an Openshift 4 cluster using the IPI method in a **baremetal** cluster on libvirt/KVM virtual machines.
+This repository contains documentation and supporting files to deploy an Openshift 4 cluster using the IPI method in a **baremetal** cluster on libvirt/KVM virtual machines.
 
-The instruction given here are meant to deploy a test cluster and help understand the process of deploying a baremetal IPI Openshift 4 cluster at a reduced cost, compared to deploying the same cluster using real baremetal servers.
+The instruction given here are meant to deploy a test cluster and help understand the baremetal IPI installation method in Openshift 4.  As an additional benefit using libvirt/KVM results in a reduced cost compared to deploying the same cluster using real baremetal servers.
 
 Even in the scenario depicted here, a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
 
 The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively.
 
-A section on how to create the infrastructure, including the metal instance in AWS and the libvirt VMs, using terraform and ansible is provided in section [Creating the infrastructure with terraform and ansible](#creating-the-infrastructure-with-terraform-and-ansible)
+In addition to the manual instructions, automation support using terraform and ansible is provided to deploy the infrastructure components both for [provisioning network based clusters (VMBC)](#creating-the-infrastructure-with-terraform-and-ansible) and for [non provisioning network based clusters (Redfish)](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
 
 ## Reference documentation
 
@@ -545,7 +546,10 @@ $ virsh -c qemu:///system pool-list --all --details
 
 ### Configure networking in the provisioning VM
 
-The following network configuration allows the bootstrap VM created as a nested virtual machine inside the provisioning host to be reachable from outside the provisioning host.  The bootstrap VM is connected to the provisioning bridges (chucky and provision) directly which allows it to get IPs in the external networks and therefore be accessible from outside the provisioning VM
+The following network configuration allows the bootstrap VM, created as a nested virtual machine inside the provisioning host, to be reachable from outside the provisioning host.  
+
+The bootstrap VM is connected to the routeable and provision bridges (chucky and provision) directly which allows it to get IPs in the external networks and therefore be accessible from outside the provisioning VM
+
 Do this from a local terminal or the connection will be dropped half way through the configuration process.
 
 Apply these instructions Even if a network connection is already active and working.
@@ -705,7 +709,7 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 
 * Optionally to get more insights about the libvirt resources from an easy to use tool, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
 
-* Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources on top of which the Openshift cluster will be deployed.
+* Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources.
 
 * Go back to the [Ansible directory](Ansible/README.md) and follow the instructions in sections [Set up KVM instances](Ansible#set-up-kvm-instances) and [Running the playbook for libvirt VMs](Ansible#running-the-playbook-for-libvirt-vms)
 
@@ -1105,13 +1109,15 @@ The following links contain additional information about sushy-tools:
 [https://docs.openstack.org/sushy-tools/latest/](https://docs.openstack.org/sushy-tools/latest/)
 [https://gist.github.com/williamcaban/e5d02b3b7a93b497459c94446105872c](https://gist.github.com/williamcaban/e5d02b3b7a93b497459c94446105872c)
 
+The instructions in this document set up the cluster to use legacy boot mode instead of UEFI boot mode.  UEFI boot mode can be used in the manual instructions, terraform libvirt module does not properly support UEFI.  If UEFI is required refer to section [Set up UEFI boot mode](#set-up-uefi-boot-mode)
+
 ### Prepare the physical host
 
 A physical host with libvirt/KVM virtual machines will be used in this demonstration.
 
 Prepare the physical host as described in section [Setup the physical host in AWS](#setup-the-physical-host-in-aws)
 
-The default virtual network in libvirt can be used, but in this case a specific network is created for the OCP cluster.  Follow the instructions in section [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm), but only create the baremetal network.
+The default virtual network in libvirt can be used, but in this case a specific network is created for the OCP cluster.  Follow the instructions in section [Create the routable baremetal and provisioning networks in KVM](#create-the-routable-baremetal-and-provisioning-networks-in-kvm), but only create the routable (chucky) network.
 
 ### Install sushy-tools
 
@@ -1170,7 +1176,7 @@ $ htpasswd -c -B -b htusers admin password
 
 Create the configuration file for the sushy-tools service. A reference file is provided in this repository at __redfish/sushy.conf__.  Use the correct values for the SSL certificate path, the http basic users file, etc.
 
-The file specified in the section SUSHY_EMULATOR_BOOT_LOADER_MAP must be present in the system.  In the case of RHEL8 this file belongs to the package edk2-ovmf.
+If UEFI boot mode is used, the file specified in the section SUSHY_EMULATOR_BOOT_LOADER_MAP must be present in the system.  This file belongs to the package edk2-ovmf.
 
 
 ### Start and test sushy tools
@@ -1295,7 +1301,7 @@ $ curl -k --user admin:password https://172.31.75.189:8080/redfish/v1/Systems/
 …
 ```
 
-The character string for every __@odata.id__ entry is the UUID of the libvirt VM, and should match the output from the following command:
+The character string in every __@odata.id__ entry is the UUID of the libvirt VM, and should match the output from the following command:
 ```
 $ sudo virsh list --all --name --uuid
 44e3c29b-325e-4ad3-9859-c29233204a8a dhns                              
@@ -1317,7 +1323,7 @@ Follow the instructions in sections:
  
 ### Create the install configuration yaml file
 
-Use the install-config.yaml file provided in this repository at **redfish/install-config.yaml** as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. match other configurations options defined in other parts of this document, and changing them in this file without updating those other configurations will break the deployment process.
+Use the install-config.yaml file provided in this repository at **redfish/install-config.yaml** as a reference, keep in mind that cluster name, DNS domain, IPs, ports, MACs, etc. must match the configurations options defined in other parts of this document, and changing them in this file without updating those other configurations will break the deployment process.
 
 The VM’s UUID and its MAC address is required for each VM, use the following command to get that information.  Run this command in the physical host:
 
@@ -1387,9 +1393,36 @@ Run the installation from the provisioning host:
 ```
 $ ./openshift-baremetal-install --dir ocp4/ create cluster
 ```
+### Set up UEFI boot mode
+
+Due to limitations in terraform libvirt module, the VMs created with it don't properly support UEFI, so the instructions in this project, both manual and automatic, create non UEFI capable hosts.  This should not be considered much of a limitation given that the clusters deployed using this project are not production ready or specially secure.
+
+Still it is possible and simple to modify the instructions to use UEFI secure boot in the manual instructions:
+
+* When [creating the empty masters and workers](#create-the-empty-cluster-hosts) add the option `--boot uefi` to the command, like in the following example:
+```
+# for x in {1..3}; do echo $x; virt-install --name bmipi-master${x} --vcpus=4  \ 
+--ram=16384 --disk path=/var/lib/libvirt/images/bmipi-master${x}.qcow2,bus=virtio,size=40 \
+--os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:7${x} \
+--boot hd,menu=on --boot uefi --graphics vnc,listen=0.0.0.0 --noreboot  --noautoconsole; done
+```
+```
+# for x in {1..2}; do echo $x; virt-install --name bmipi-worker${x} --vcpus=4 \
+ --ram=16384 --disk path=/var/lib/libvirt/images/bmipi-worker${x}.qcow2,bus=virtio,size=40  \
+ --os-variant rhel8.5 --network network=chucky,model=virtio,mac=52:54:00:a9:6d:9${x} \        
+ --boot hd,menu=on --boot uefi --graphics vnc,listen=0.0.0.0 --noreboot --noautoconsole; done
+```
+* In the file install-config.yaml remove all occurrences of the following line:
+```
+bootMode: legacy
+```
+There is one such line for every host defined in the install-config.yaml file, all must be removed so the default value of **UEFI** is used.  Alternatively the UEFI value can be specified but this is not really necessary since that is the default value. 
+```
+bootMode: UEFI
+```
 ### Automatic deployment of infrastructure with ansible and terraform
 
-It is possile to create the necessary infrastructure components using terraform templates and ansible playbooks, this simplifies and speeds up the process, and makes it less error prone.
+It is possile to create the necessary infrastructure components using terraform templates and ansible playbooks, this simplifies and speeds up the installation process, and makes it less error prone.
 
 For these instructions to run successfully terraform and ansible must be installed and working in the controlling host.
 
@@ -1399,7 +1432,22 @@ For these instructions to run successfully terraform and ansible must be install
 
 * Optionally to get more insights about the libvirt resources from an easy to use tool, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
 
+* Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources.  Make sure to define the variable `architecture = "redfish"`
 
+* Go back to the [Ansible directory](Ansible/README.md) and follow the instructions in sections [Set up KVM instances](Ansible#set-up-kvm-instances) and [Running the playbook for libvirt VMs](Ansible#running-the-playbook-for-libvirt-vms)
+
+* SSh into the provisioning node as the kni user. Make sure to [add the ssh key to the shell](Ansible#add-the-common-ssh-key). The connection can be stablish [using the EC2 instance as a jump host](Ansible#running-tasks-in-via-a-jumphost-with-ssh)
+
+     The home directory of the kni user contains all necessary files to run the Openshift installation, and all the require infrastructure should be in place and ready.
+```
+$ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
+```
+
+* Review the install-config.yaml file and add or modify the configuratin options.
+
+* Copy the install-config.yaml file into the directory with the name of the cluster
+
+* Run the [Openshift installer](#install-the-openshift-cluster-with-bmc)
 
 ## External access to Openshift using NGINX
 

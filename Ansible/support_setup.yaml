@@ -55,7 +55,7 @@
     - name: Assing a FQDN name to the support VM
       hostname:
           name: "support.{{ dns_zone }}"
-    - name: Subscribe with Red Hat
+    - name: Subscribe support VM with Red Hat
       redhat_subscription:
         state: present
         activationkey: "{{ subscription_activationkey }}"
@@ -164,7 +164,7 @@
     - name: Wait for provision VM connection to become available
       wait_for_connection:
         timeout: 300
-    - name: Subscribe with Red Hat
+    - name: Subscribe provision VM with Red Hat
       redhat_subscription:
         state: present
         activationkey: "{{ subscription_activationkey }}"
@@ -228,13 +228,22 @@
         project_path: 'provision/'
         state: present
         force_init: yes
-    - name: Render install-config template
+    - name: Render install-config template for provisioning based architecture
       template:
-        src: install-config.j2
+        src: vbmc/install-config.j2
         dest: /home/kni/install-config.yaml
         owner: kni
         group: kni
         mode: 0644
+      when: architecture == "vbmc"
+    - name: Render install-config template for redfish based architecture
+      template:
+        src: redfish/install-config.j2
+        dest: /home/kni/install-config.yaml
+        owner: kni
+        group: kni
+        mode: 0644
+      when: architecture == "redfish"
     - name: Create {{ cluster_name }} directory
       file:
         path: /home/kni/{{ cluster_name }}

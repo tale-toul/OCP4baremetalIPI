@@ -23,3 +23,8 @@ output "ssh_certificate" {
   value = var.ssh-keyfile
   description = "Public key for the certificate injected in the EC2 instance"
 }
+
+output "baremetal_private_ip" {
+  value = data.aws_instance.baremetal-actual.private_ip
+  description = "Private IP in the baremetal instance"
+}
