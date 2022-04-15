@@ -109,16 +109,6 @@
         - named
         - dhcpd
 
-    - name: Update OS in support host
-      dnf:
-        name: "*"
-        state: latest
-      register: _os_update
-    - name: Reboot if OS updated
-      reboot:
-        reboot_timeout: 600
-      when: _os_update.changed == True
-
 #Set up virtual BMC or Red Fish
 - name: Set up VBMC or Red Fish
   hosts: baremetal
@@ -300,7 +290,12 @@
       args:
         chdir: /home/kni
         creates: /home/kni/openshift-baremetal-install
-    - name: Update OS in provision host
+
+- name: Update and reboot KVM hosts
+  hosts: kvm
+  gather_facts: no
+  tasks:
+    - name: Update OS
       dnf:
         name: "*"
         state: latest
