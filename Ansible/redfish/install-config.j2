@@ -26,8 +26,8 @@ platform:
         bmc:
           address: redfish-virtualmedia://{{ baremetal_private_ip }}:{{ sushy_tools_port }}/redfish/v1/Systems/{{ hostvars[baremetal_public_ip]['masters_uuid']['results'][loop.index0]['stdout'] }}
           disableCertificateVerification: True
-          username: admin
-          password: "{{ hostvars[baremetal_public_ip]['sushy_admin_passwd'] }}"
+          username: "{{ managed_user }}"
+          password: "{{ hostvars[baremetal_public_ip]['managed_password'] }}"
         bootMACAddress: {{ master_chucky_mac_base }}{{ loop.index0 }}
         bootMode: legacy
         hardwareProfile: libvirt
@@ -40,8 +40,8 @@ platform:
         bmc:
           address: redfish-virtualmedia://{{ baremetal_private_ip }}:{{ sushy_tools_port }}/redfish/v1/Systems/{{ hostvars[baremetal_public_ip]['workers_uuid']['results'][loop.index0]['stdout'] }}
           disableCertificateVerification: True
-          username: admin
-          password: "{{ hostvars[baremetal_public_ip]['sushy_admin_passwd'] }}"
+          username: "{{ managed_user }}"
+          password: "{{ hostvars[baremetal_public_ip]['managed_password'] }}"
         bootMACAddress: {{ worker_chucky_mac_base }}{{ '%x' % loop.index0 }}
         bootMode: legacy
         hardwareProfile: libvirt

@@ -6,7 +6,9 @@
   tasks:
     - name: Remove stale entries from known_hosts file in the ansible host
       command: ssh-keygen -R {{ item }}
-      with_items: "{{ groups['support'] }}"
+      loop:
+        - "{{ groups['support'] | first }}"
+        - "{{ groups['provision'] | first }}"
     - name: Save terraform variables to a file
       shell: terraform output |tr '=' ':' > ../../Ansible/group_vars/all/support_terraform_outputs.var
       args:
@@ -18,7 +20,7 @@
           - 'data'
           - 'var'
         ignore_unknown_extensions: yes
-    - name: Update support group in inventory file
+    - name: Update support and provision groups in inventory file
       blockinfile:
         path: inventory
         marker: "# {mark} Ansible block for support and provision"
@@ -32,7 +34,7 @@
       blockinfile:
         path: inventory
         marker: "# {mark} Ansible block for support variables"
-        insertafter: "^\\[support:vars\\]$"
+        insertafter: "^\\[kvm:vars\\]$"
         block: |
            ansible_ssh_common_args='-o ProxyJump="ec2-user@{{ baremetal_public_ip }}"' 
     - name: Reload inventory
@@ -129,6 +131,10 @@
           - 'data'
           - 'var'
         ignore_unknown_extensions: yes
+    - name: Generate random password for managed system access
+      set_fact:
+        managed_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+      no_log: true
     - name: Set up VBMC
       include_tasks: vbmc/setup_vbmc.yaml
       when: architecture == "vbmc"

@@ -1,7 +1,7 @@
 [VirtualBMC]
 domain_name = {{ item }}
-username = {{ vbmc_user }}
-password = {{ vbmc_password }}
+username = {{ managed_user }}
+password = {{ managed_password }}
 port = {{ 7000 + x }}
 address = ::
 libvirt_uri = qemu:///system

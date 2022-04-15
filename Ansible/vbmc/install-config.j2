@@ -29,8 +29,8 @@ platform:
         bmc:
           address: ipmi://{{ chucky_gateway }}:700{{ loop.index0 }}
           disableCertificateVerification: True
-          username: {{ vbmc_user }}
-          password: {{ vbmc_password }}
+          username: {{ managed_user }}
+          password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
         bootMACAddress: {{ master_provision_mac_base }}{{ loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}
@@ -40,8 +40,8 @@ platform:
         bmc:
           address: ipmi://{{ chucky_gateway }}:{{ 7000 + loop.index0 +3 }}
           disableCertificateVerification: True
-          username: {{ vbmc_user }}
-          password: {{ vbmc_password }}
+          username: {{ managed_user }}
+          password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
         bootMACAddress: {{ worker_provision_mac_base }}{{ '%x' % loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}

@@ -1078,24 +1078,34 @@ $ sudo systemctl start libvirtd
 $ sudo systemctl enable libvirtd
 ```
 
+Copy the rhel8 qcow2 image: 
+```
+# scp -i benaka.pem rhel-8.5-x86_64-kvm.qcow2 ec2-user@44.198.53.71:
+```
+
 Create the virtual networks: routable and provisioning using the xml definitions at the top of the doc
 
 
 ### Import the VM providing DHCP and DNS services
 
-* Copy the qcow2 and the xml definition files:
+* Extract the xml definition from the existing VM
 ```
-# scp -i benaka.pem /var/lib/libvirt/images/dhns.qcow2 dhns.xml ec2-user@44.198.53.71:
-$  sudo mv dhns.qcow2 /var/lib/libvirt/images
-$  sudo ls -l /var/lib/libvirt/images
-$  sudo chown qemu: /var/lib/libvirt/images/dhns.qcow2
-$  sudo virsh define dhns.xml
-$ sudo virsh start dhns
+# virsh dumpxml dhns > dhns2.xml
 ```
 
-Copy the rhel8 qcow2 image: 
+* Copy the qcow2 image file and the xml definition files to the destination host
 ```
-# scp -i benaka.pem rhel-8.5-x86_64-kvm.qcow2 ec2-user@44.198.53.71:
+# scp -i benaka.pem /var/lib/libvirt/images/dhns.qcow2 dhns.xml ec2-user@44.198.53.71:
+```
+
+* Import the VM in the destination host
+```
+$ sudo mv dhns.qcow2 /var/lib/libvirt/images
+$ sudo ls -l /var/lib/libvirt/images
+$ sudo chown qemu: /var/lib/libvirt/images/dhns.qcow2
+$ sudo restorecon -R -Fv /var/lib/libvirt/images/
+$ sudo virsh define dhns.xml
+$ sudo virsh start dhns
 ```
 
 ## Redfish based architecture
