@@ -1,0 +1,3 @@
+---
+# defaults file for setup_support_services
+chucky_net_addr: "192.168.30.0/24" 

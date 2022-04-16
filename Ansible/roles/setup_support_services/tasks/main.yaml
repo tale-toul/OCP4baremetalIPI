@@ -1,0 +1,46 @@
+---
+- name: Install required packages in support VM
+  dnf:
+    name:
+      - bind
+      - bind-utils
+      - dhcp-server
+    state: present
+- name: Render DNS named.conf template
+  template:
+    src: named.conf.j2
+    dest: /etc/named.conf
+    mode: 0664
+- name: Render DNS zone pointer file
+  template:
+    src: openshift.zones.j2
+    dest: /etc/named/openshift.zones
+    mode: 0664
+- name: Render DNS forward zone file
+  template:
+    src: forward.zone.j2
+    dest: /var/named/{{ dns_zone }}.zone
+    mode: 0664
+    owner: named
+    group: named
+- name: Render DNS reverse zone file
+  template:
+    src: reverse.zone.j2
+    dest: /var/named/{{ dns_zone }}.rzone
+    mode: 0664
+    owner: named
+    group: named
+- name: Render DHCP configuratio file
+  template:
+    src: dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+    mode: 0664
+
+- name: Enable and start DNS and DHCP services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - named
+    - dhcpd
