@@ -62,52 +62,9 @@
         state: present
         activationkey: "{{ subscription_activationkey }}"
         org_id: "{{ subscription_org_id }}"
-    - name: Install required packages in support VM
-      dnf:
-        name:
-          - bind
-          - bind-utils
-          - dhcp-server
-        state: present
-#Set up DNS and DHCP services
-    - name: Render DNS named.conf template
-      template:
-        src: dns/named.conf.j2
-        dest: /etc/named.conf
-        mode: 0664
-    - name: Render DNS zone pointer file
-      template:
-        src: dns/openshift.zones.j2
-        dest: /etc/named/openshift.zones
-        mode: 0664
-    - name: Render DNS forward zone file
-      template:
-        src: dns/forward.zone.j2
-        dest: /var/named/{{ dns_zone }}.zone
-        mode: 0664
-        owner: named
-        group: named
-    - name: Render DNS reverse zone file
-      template:
-        src: dns/reverse.zone.j2
-        dest: /var/named/{{ dns_zone }}.rzone
-        mode: 0664
-        owner: named
-        group: named
-    - name: Render DHCP configuratio file
-      template:
-        src: dhcp/dhcpd.conf.j2
-        dest: /etc/dhcp/dhcpd.conf
-        mode: 0664
-
-    - name: Enable and start DNS and DHCP services
-      service:
-        name: "{{ item }}"
-        state: started
-        enabled: yes
-      loop:
-        - named
-        - dhcpd
+    - name: Set up DNS and DHCP services
+      include_role:
+        name: setup_support_services
 
 #Set up virtual BMC or Red Fish
 - name: Set up VBMC or Red Fish

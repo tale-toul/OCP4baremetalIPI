@@ -4,11 +4,6 @@ output "chucky_net_addr" {
   description = "Network address for the routable chucky network"
 }
 
-output "chucky_short_net" {
-  value       = local.chucky_short_net
-  description = "Short version of the chucky net address space"
-}
-
 output "worker_provision_mac_base" {
   value       = var.worker_provision_mac_base
   description = "MAC address common part for the worker NICs in the provisioning network"
@@ -92,11 +87,6 @@ output "number_of_workers" {
 output "dns_zone" {
   value     = var.dns_zone
   description = "DNS base zone for the Openshift cluster"
-}
-
-output "dns_backzone_filename" {
-  value     = local.dns_backzone_filename
-  description = "DNS reverse zone filename"
 }
 
 output "cluster_name" {

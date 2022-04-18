@@ -144,8 +144,6 @@ variable "worker_chucky_mac_base" {
 }
 
 locals {
-  #Short version of the chucky net address space (192.168.30)
-  chucky_short_net = replace(var.chucky_net_addr,".0/24","")
 
   #IP address for the network interface connected to the provisioning network in the provisioning VM
   provision_ironiq_addr = replace(var.provision_net_addr,".0/",".14/")
@@ -170,15 +168,6 @@ locals {
 
   #End of the provisioning networkk DHCP Range
   provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
-
-  #DNS reverse zone filename
-  #What this does is:
-  # - Remove the ".0/24" from the chucky network definition: "192.168.30"
-  # - Separate the remaining octects in a list: ["192","168","30"]
-  # - Reveres the list: ["30","168","192"]
-  # - Add an element to the end of the list: ["30","168","192","in-addr.arpa"]
-  # - Make a string by joining the list elements with dots: "30.168.192.in-addr.arpa"
-  dns_backzone_filename = join(".",concat(reverse(split(".",replace(var.chucky_net_addr,".0/24",""))),["in-addr.arpa"]))
 
   #Cluster name without quotes
   cluster_name_nq = trim(var.cluster_name,"\"")

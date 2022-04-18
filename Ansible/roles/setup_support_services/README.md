@@ -1,17 +1,32 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+This role is used to set up some support services like DNS and DHCP in the support host
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+The following variables are used in this role.  A list of commented default values is included in the file **setup_support_services/defaults/main.yml**:
+
+* **chucky_net_addr**.- Network address for the routable chucky network, used in the DNS configuration.  Default value **192.168.30.0/24**
+
+* **cluster_name**.- Subdomain for the whole cluster DNS name.  For example for a **cluster_name=ocp4** and a **dns_zone=tale.net** the whole cluster domain is **ocp4.tale.net**.  Used in the DNS and DHCP configuration.  Default value **ocp4**.  
+
+* **dns_zone**.- Internal private DNS zone for the Openshift cluster.  This is not resolvable outside the virtual infrastructure.  Used in the DNS and DHCP configuration.  Default value **tale.net** 
+
+* **master_chucky_mac_base**.- MAC address common part for the master NICs in the chucky network.  Default value 52:54:00:a9:6d:7
+
+* **master_names**.- List of master node names. Used to specify the nodes to be configure for DNS and DHCP
+
+* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  The letters in the MACs should be in lowercase.  Default value 52:54:00:9d:41:3c
+
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Default value 52:54:00:a9:6d:9
+
+* **worker_names**.- List of worker node names.  Used to specify the nodes to be configure for DNS and DHCP
 
 Dependencies
 ------------

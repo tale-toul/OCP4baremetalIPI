@@ -5,7 +5,7 @@ zone "{{ dns_zone }}" IN {
 
 
 //backward zone
-zone "{{ dns_backzone_filename }}" IN {
+zone "{{ dns_backzone }}" IN {
             type master;
             file "{{ dns_zone }}.rzone";
 };

@@ -119,15 +119,12 @@ The list of variables used by the playbook are:
 
 * **chucky_gateway** 
 
-* **chucky_net_addr**
+* **chucky_net_addr**.- Network address for the routable chucky network from which all VMs get an IP address.  Defined and used in **Terraform/libvirt**.  Default value **192.168.30.0/24**
+  * **chucky_short_net**.- Network address for the routable chucky network in short form (192.168.30).  This variable is automatically assigned by an ansible task in the **setup_support_services** role.
 
-* **chucky_short_net**
+* **cluster_name**.- Subdomain for the whole cluster DNS name.  For example for a **cluster_name=ocp4** and a **dns_zone=tale.net** the whole cluster domain is **ocp4.tale.net**.  Defined and used by ansible.  Default value **ocp4**.  
 
-* **cluster_name** 
-
-* **dns_backzone_filename**  
-
-* **dns_zone**
+* **dns_zone**.- Internal private DNS zone for the Openshift cluster.  This is not resolvable outside the virtual infrastructure.
 
 * **ingress_vip** 
 
@@ -135,9 +132,9 @@ The list of variables used by the playbook are:
 
 * **managed_user** 
 
-* **master_chucky_mac_base** 
+* **master_chucky_mac_base**.- MAC address common part for the master NICs in the chucky network.  Defined in **Terraform/libvirt**.  Default value 52:54:00:a9:6d:7
 
-* **master_names** 
+* **master_names**.- List of master node names.  Obtained as an output variable from **Terraform/libvirt**
 
 * **master_provision_mac_base** 
 
@@ -147,7 +144,7 @@ The list of variables used by the playbook are:
 
 * **provision_host_ip**
 
-* **provision_mac** 
+* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  Defined in **Terraform/libvirt**.  The letters in the MACs should be in lowercase.  Default value 52:54:00:9d:41:3c
 
 * **provisioning_dhcp_end** 
 
@@ -163,9 +160,10 @@ The list of variables used by the playbook are:
 
 * **sushy_tools_port** 
 
-* **worker_chucky_mac_base** 
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Defined in **Terraform/libvirt**.  Default value 52:54:00:a9:6d:9
+ 
 
-* **worker_names**
+* **worker_names**.- List of worker node names.  Obtained as an output variable from **Terraform/libvirt**
 
 * **worker_provision_mac_base** 
 

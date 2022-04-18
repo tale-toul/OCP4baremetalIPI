@@ -11,11 +11,19 @@
     src: named.conf.j2
     dest: /etc/named.conf
     mode: 0664
+# In goes 192.168.30.0/24, out comes 30.168.192.in-addr.arpa
+- name: Define dns_backzone variable
+  set_fact:
+    dns_backzone: "{{ chucky_net_addr.split('.') | reverse | join('.') | regex_replace('^[^.]+\\.') }}.in-addr.arpa"
 - name: Render DNS zone pointer file
   template:
     src: openshift.zones.j2
     dest: /etc/named/openshift.zones
     mode: 0664
+# In goes 192.168.30.0/24, out comes 192.168.30
+- name: Define chucky_short_net variable
+  set_fact:
+    chucky_short_net: "{{ chucky_net_addr | regex_replace('(.+)\\.[^.]+$', '\\1') }}"
 - name: Render DNS forward zone file
   template:
     src: forward.zone.j2
