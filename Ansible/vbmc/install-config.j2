@@ -45,6 +45,6 @@ platform:
         bootMACAddress: {{ worker_provision_mac_base }}{{ '%x' % loop.index0 }}
         hardwareProfile: libvirt
 {% endfor %}
-pullSecret: '{{ lookup('file', 'pull-secret')  }}'
+pullSecret: '{{ lookup('file', 'pull-secret') }}'
 sshKey: |
-  {{ lookup('file', '../Terraform/'+ssh_certificate)  }}
+  {{ lookup('file', '../Terraform/'+ssh_certificate) }}

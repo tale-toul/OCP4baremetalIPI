@@ -168,7 +168,4 @@ locals {
 
   #End of the provisioning networkk DHCP Range
   provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
-
-  #Cluster name without quotes
-  cluster_name_nq = trim(var.cluster_name,"\"")
 }

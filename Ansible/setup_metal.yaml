@@ -8,6 +8,7 @@
       command: ssh-keygen -R {{ item }}
       loop:
         - "{{ groups['baremetal'] | first }}"
+      ignore_errors: yes
     - name: Save terraform variables to a file
       shell: terraform output |tr '=' ':' > ../Ansible/group_vars/all/terraform_outputs.var
       args:
@@ -19,7 +20,7 @@
       blockinfile:
         path: inventory
         block: "{{ baremetal_public_ip }}"
-        insertafter: "[baremetal]"
+        insertafter: "^\\[baremetal\\]$"
     - name: Reload inventory
       meta: refresh_inventory
 - name: Setup baremetal host

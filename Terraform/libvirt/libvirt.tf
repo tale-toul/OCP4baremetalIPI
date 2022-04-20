@@ -237,7 +237,7 @@ resource "libvirt_domain" "worker_domains" {
 resource "libvirt_volume" "support_volume" {
   name = "support.qcow2"
   base_volume_id = libvirt_volume.rhel_volume.id
-  #40GB
+  #50GB
   size = 53687091200
 }
 
