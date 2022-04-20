@@ -1,3 +1,3 @@
-update_OS: true
+update_OS: false
 sushy_tools_port: "8080"
 managed_user: admin
