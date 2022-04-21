@@ -5,6 +5,7 @@ terraform {
     }
   }
 }
+
 data "terraform_remote_state" "ec2_instance" {
   backend = "local"
 
@@ -15,13 +16,6 @@ data "terraform_remote_state" "ec2_instance" {
 
 provider "libvirt" {
   uri = "qemu+ssh://ec2-user@${data.terraform_remote_state.ec2_instance.outputs.baremetal_public_ip}/system?keyfile=../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}"
-}
-
-#Default storage pool
-resource "libvirt_pool" "pool_default" {
-  name = "default"
-  type = "dir"
-  path = "/var/lib/libvirt/images"
 }
 
 #Networks
@@ -55,7 +49,6 @@ resource "libvirt_volume" "rhel_volume" {
   name = "rhel8_base.qcow2"
   source = "${var.rhel8_image_location}"
   format = "qcow2"
-  depends_on = [libvirt_pool.pool_default]
 }
 
 #PROVISION VM 
@@ -68,7 +61,6 @@ resource "libvirt_volume" "provision_volume" {
 
 resource "libvirt_cloudinit_disk" "provision_cloudinit" {
   name = "provision.iso"
-  pool = libvirt_pool.pool_default.name
   user_data = templatefile("${path.module}/provision_cloud_init.tmpl", { auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}") })
   network_config = templatefile("${path.module}/provision_network_config.tmpl", { ironiq_addr = local.provision_ironiq_addr, architecture = var.architecture  })
 }
@@ -129,7 +121,6 @@ resource "libvirt_volume" "master_volumes" {
   format = "qcow2"
   #80GB
   size = 85899345920
-  depends_on = [libvirt_pool.pool_default]
 }
 
 #Master VMs
@@ -185,7 +176,6 @@ resource "libvirt_volume" "worker_volumes" {
   format = "qcow2"
   #80GB
   size = 85899345920
-  depends_on = [libvirt_pool.pool_default]
 }
 
 #Worker VMs
@@ -243,7 +233,6 @@ resource "libvirt_volume" "support_volume" {
 
 resource "libvirt_cloudinit_disk" "support_cloudinit" {
   name = "support.iso"
-  pool = libvirt_pool.pool_default.name
   user_data = templatefile("${path.module}/support_cloud_init.tmpl", { auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}") })
   network_config = templatefile("${path.module}/support_network_config.tmpl", { address = "${local.support_host_ip}/24", nameserver = var.support_net_config_nameserver, gateway = local.chucky_gateway })
 }

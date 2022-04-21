@@ -24,7 +24,7 @@ aws_secret_access_key=xxxx
 
 ## Applying the terraform template
 
-Some variables are defined in the Terraform/input-vars.tf** that can be used to modify some configuration parameters.  The most relevan of these are:
+Some variables are defined in the **Terraform/input-vars.tf** that can be used to modify some configuration parameters.  The most relevan of these are:
 
 * **region_name**.- AWS Region where the EC2 instance and other resources are created.  Keep in mind that the same infrastructure may incur different costs depending on the region.
 

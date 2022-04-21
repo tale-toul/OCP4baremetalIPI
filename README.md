@@ -715,7 +715,7 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 
 * SSh into the provisioning node as the kni user. Make sure to [add the ssh key to the shell](Ansible#add-the-common-ssh-key). The connection can be stablish [using the EC2 instance as a jump host](Ansible#running-tasks-in-via-a-jumphost-with-ssh)
 
-     The home directory of the kni user contains all necessary files to run the Openshift installation, and all the require infrastructure should be in place and ready.
+     The home directory of the kni user contains all necessary files to run the Openshift installation, and all the required infrastructure should be in place and ready.
 ```
 $ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
 ```
@@ -1440,7 +1440,7 @@ For these instructions to run successfully terraform and ansible must be install
 
 * Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [Subscribe hosts with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the common ssh key](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal EC2 instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
 
-* Optionally to get more insights about the libvirt resources from an easy to use tool, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
+* Optionally get more insights about the libvirt resources, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
 
 * Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources.  Make sure to define the variable `architecture = "redfish"`
 
@@ -1669,7 +1669,7 @@ $ curl http://httpd-example-bandido.redhat.com/
 ```
 * Access to the web console and oauth service
 
-    For the speical case of the web console and oauth service, the URL must use the internal DNS domain (https://console-openshift-console.apps.ocp4.tale.net and  https://oauth-openshift.apps.ocp4.tale.net).  This can be achieved by adding this names to the hosts file in the local host.
+    For the special case of the web console and oauth service, the URL must use the internal DNS domain (https://console-openshift-console.apps.ocp4.tale.net and  https://oauth-openshift.apps.ocp4.tale.net).  This can be achieved by adding this names to the hosts file in the local host.
 
 ## Enable Internal Image Registry
 In a berametal IPI Openshift cluster, the internal image registry is not available after installation, this can be verified by checking the value of managementState in the registry configuration, if the value is __Removed__ the registry is not available:

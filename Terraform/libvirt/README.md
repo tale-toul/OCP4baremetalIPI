@@ -184,7 +184,6 @@ $ terraform apply -var-file monaco.vars
 
 ## Created resources
 The template creates the following components:
-* A storage pool.- This is the default storage pool, of type directory, using /var/lib/libvirt/images directory
 * 1 or 2 networks, depending on the value of the **architecture** variable.  DHCP is disable in both networks:
   * chucky.- this is the routable network.  This is always created.
   * provision.- this is the provisioning network, not routable.  Created when `architecture=vbmc` which is the default value.

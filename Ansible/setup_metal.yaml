@@ -63,9 +63,12 @@
       file:
         path: /var/lib/libvirt/images
         mode: '0751' 
-    - name: Apply new SELinux file context to filesystem
-      command: restorecon -R -Fv /var/lib/libvirt/images/
 
+    - name: Add hashicorp repo for terraform
+      get_url:
+        url: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+        dest: /etc/yum.repos.d/hashicorp.repo
+        mode: '0644'
     - name: Install required packages
       dnf:
         name: 
@@ -78,6 +81,7 @@
           - libvirt-devel
           - ipmitool
           - httpd-tools
+          - terraform
         state: present
     - name: Enable and start firewalld service
       service:
@@ -94,6 +98,20 @@
         name: libvirtd
         state: started
         enabled: yes
+
+    - name: Copy terraform template to create default storage pool in EC2 baremetal instance
+      synchronize:
+        src: terraform
+        dest: .
+        use_ssh_args: yes
+        owner: no
+        group: no
+    - name: Create default libvirt storage pool
+      terraform:
+        project_path: 'terraform/'
+        state: present
+        force_init: yes
+
     - name: Update OS and reboot host
       block:
         - name: Update OS

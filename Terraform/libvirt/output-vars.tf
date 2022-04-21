@@ -90,7 +90,7 @@ output "dns_zone" {
 }
 
 output "cluster_name" {
-  value = local.cluster_name_nq
+  value = var.cluster_name
   description = "Cluster name that is part of the DNS domain"
 }
 
