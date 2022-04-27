@@ -1,6 +1,6 @@
 ##OUTPUT
 output "baremetal_public_ip" {  
- value       = aws_eip.baremetal_eip.public_ip
+ value       = var.spot_instance ? aws_eip.baremetal_eip_spot[0].public_ip : aws_eip.baremetal_eip[0].public_ip
  description = "The public IP address of EC2 metal instance"
 }
 output "region_name" {
@@ -17,6 +17,6 @@ output "ssh_certificate" {
 }
 
 output "baremetal_private_ip" {
-  value = aws_instance.baremetal.private_ip
+  value = var.spot_instance ? aws_spot_instance_request.baremetal[0].private_ip : aws_instance.baremetal[0].private_ip
   description = "Private IP in the baremetal instance"
 }

@@ -38,6 +38,10 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default value: c5n.metal
 
+* **spot_instance**.- Determines if the AWS EC2 metal instance created is an spot instance (true) or not (false). Using a spot instance reduces cost but is not guaranteed to be available for long periods
+
+     Default = false
+
 Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
 Apply the template to create the infrastructure with a command like:

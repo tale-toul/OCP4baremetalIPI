@@ -29,6 +29,12 @@ variable "instance_type" {
   default = "c5n.metal"
 }
 
+variable "spot_instance" {
+  description = "Determines if the AWS instance created is an spot instance or not"
+  type = bool
+  default = false
+}
+
 #LOCALS
 locals {
 #Fixed short random string

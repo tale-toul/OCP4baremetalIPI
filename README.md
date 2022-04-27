@@ -54,7 +54,7 @@
 
 This repository contains documentation and supporting files to deploy an Openshift 4 cluster using the IPI method in a **baremetal** cluster on libvirt/KVM virtual machines.
 
-The instruction given here are meant to deploy a test cluster and help understand the baremetal IPI installation method in Openshift 4.  As an additional benefit using libvirt/KVM results in a reduced cost compared to deploying the same cluster using real baremetal servers.
+This instruction are meant to deploy a test cluster and help understand the baremetal IPI installation method in Openshift 4.  As an additional benefit using libvirt/KVM results in a reduced cost compared to deploying the same cluster using real baremetal servers.
 
 Even in the scenario depicted here, a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
 
