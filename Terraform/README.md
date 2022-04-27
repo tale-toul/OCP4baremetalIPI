@@ -53,8 +53,6 @@ When all the infrastructure components have been created, output variables are s
 
 ```
 baremetal_public_ip = "4.83.45.254"
-bastion_private_ip = "172.20.12.225"
-public_subnet_cidr_block = "172.20.0.0/20"
 region_name = "us-east-1"
 vpc_cidr = "172.20.0.0/16"
 ```

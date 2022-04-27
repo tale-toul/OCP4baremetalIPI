@@ -233,8 +233,3 @@ resource "aws_instance" "baremetal" {
         Name = "baremetal-${local.suffix}"
   }
 }
-
-#Used to extract the public IP address in the output vars
-data "aws_instance" "baremetal-actual" {
-  instance_id = aws_instance.baremetal.id
-}
