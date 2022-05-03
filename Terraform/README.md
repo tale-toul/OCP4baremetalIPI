@@ -38,7 +38,7 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default value: c5n.metal
 
-* **spot_instance**.- Determines if the AWS EC2 metal instance created is an spot instance (true) or not (false). Using a spot instance reduces cost but is not guaranteed to be available for long periods
+* **spot_instance**.- Determines if the AWS EC2 metal instance created is an spot instance (true) or not (false). Using a spot instance reduces cost but is __not guaranteed__ to be available at creation time or for long periods.
 
      Default = false
 
@@ -46,7 +46,7 @@ Copy a public ssh key file in the Terraform directory, the default expected name
 
 Apply the template to create the infrastructure with a command like:
 ```
-$ terraform apply -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
+$ terraform apply -var region_name=us-east-1 -var ssh-keyfile=baremetal-ssh.pub -var instance_type=c5.metal -var spot_instance=true
 ```
 If the terraform variables are used with non default values, keep a copy of the command so the same values are used to destroy the infrastructure:
 ```
