@@ -44,10 +44,12 @@ $ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id
 ### Variables interface for setup_metal.yaml
 The list of variables used by the playbook are:
 
-* **baremetal_public_ip**.- Contains the public Internet facing IP address of the EC2 instance.  This variable is automatically assigned a value by terraform template **Terraform/main.tf** as an output variable
+* **baremetal_public_ip**.- Contains the public Internet facing IP address of the EC2 instance.  This variable is automatically assigned by terraform template **Terraform/main.tf** as an output variable
 * **subscription_activationkey** and **subscription_org_id**.- Contain the activation key and organiaztion ID required to subscribe the RHEL host as explained in section [Subscribe hosts with Red Hat](#subscribe-hosts-with-red-hat).  These variables must be assigned by the user.
 
-* **update_OS**.- Whether to update the Operating system and reboot the host (true) or not (false).  Rebooting the EC2 instance is time consuming and may take between 10 and 20 minutes.  This variable is defined in the file **Ansible/group_vars/all/general.var**. Default value: **false**
+* **update_OS**.- Whether to update the Operating system and reboot the host (true) or not (false).  Rebooting the EC2 instance is time consuming and may take between 10 and 20 minutes.  This variable is defined in the file **Ansible/group_vars/all/general.var**. 
+
+Default value: **false**
 
 ### Rebooting the host after OS update
 The playbook contains a task to update the Operating System, depending on what packages were updated, the kernel for example, the host may require a reboot.

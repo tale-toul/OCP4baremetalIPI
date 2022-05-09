@@ -145,6 +145,10 @@ resource "libvirt_domain" "master_domains" {
     }
   }
 
+  cpu {
+    mode = "host-passthrough"
+  }
+
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = "${var.master_chucky_mac_base}${count.index}"
@@ -190,6 +194,10 @@ resource "libvirt_domain" "worker_domains" {
 
   disk {
     volume_id = libvirt_volume.worker_volumes[count.index].id
+  }
+
+  cpu {
+    mode = "host-passthrough"
   }
 
   dynamic "network_interface" {
