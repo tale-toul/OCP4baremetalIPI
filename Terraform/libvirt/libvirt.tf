@@ -119,8 +119,8 @@ resource "libvirt_volume" "master_volumes" {
   name = "master${count.index}.qcow2"
   pool = "default"
   format = "qcow2"
-  #80GB
-  size = 85899345920
+  #120GB
+  size = 128849018880
 }
 
 #Master VMs
@@ -178,8 +178,8 @@ resource "libvirt_volume" "worker_volumes" {
   name = "worker${count.index}.qcow2"
   pool = "default"
   format = "qcow2"
-  #80GB
-  size = 85899345920
+  #120GB
+  size = 128849018880
 }
 
 #Worker VMs
