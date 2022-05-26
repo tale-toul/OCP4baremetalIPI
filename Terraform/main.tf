@@ -239,7 +239,7 @@ resource "aws_instance" "baremetal" {
   }
 
   ebs_block_device {
-    volume_size = 1000
+    volume_size = var.ebs_disk_size
     delete_on_termination = true
     device_name = "/dev/sdb"
   }
@@ -272,7 +272,7 @@ resource "aws_spot_instance_request" "baremetal" {
   }
 
   ebs_block_device {
-    volume_size = 1000
+    volume_size = var.ebs_disk_size
     delete_on_termination = true
     device_name = "/dev/sdb"
   }

@@ -42,6 +42,10 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default = false
 
+* **ebs_disk_size**.- Size, in Megabytes, of the additional EBS disk attached to the metal instance. This disk is used to store the libvirt/KVM Virtual Machine disks.
+
+     Default value: 1000
+
 Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
 Apply the template to create the infrastructure with a command like:

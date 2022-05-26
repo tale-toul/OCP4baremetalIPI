@@ -35,6 +35,12 @@ variable "spot_instance" {
   default = false
 }
 
+variable "ebs_disk_size" {
+  description = "Size, in Megabytes, of the additional EBS disk attached to the metal instance"
+  type = number
+  default = 1000
+}
+
 #LOCALS
 locals {
 #Fixed short random string
