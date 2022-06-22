@@ -1843,7 +1843,8 @@ The internal image registry is ready for use.
 
 To install the cluster using a bonding interface as the main NIC in all nodes (master and workers), the nodes need 2 ethernet NICS connected to the routable network.  If the installation is usng a provisioning network, an additional NIC connected to the provisioning network is required.  The terraform libvirt.tf template takes care of the creation of all the NICs.
 
-There are tow pptions to create the bonding interface in the nodes: Let the Openshift installer create the bonding interface (preferred); create the bonding interface after the OCP cluster has been installed.
+There are two pptions to create the bonding interface in the nodes: Let the Openshift installer create the bonding interface (preferred); create the bonding interface after the OCP cluster has been installed.
+
 
 ### Obtaining the NIC names
 
@@ -1919,6 +1920,8 @@ When the installation is completed we end up with a painted into the corner situ
 
 
 ### Create the bonding interface during cluster installation
+
+The libvirt terraform template and the support_setup ansible playbook in this repository create the neccesary infrastructure and configuration files to deploy the cluster with a bonding interface.
 
 To install the cluster using a bonding interface created as part of the installation process follow the instructions [in the official documentation](https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-updating-node-network-config.html#virt-example-bond-nncp_k8s_nmstate-updating-node-network-config), make sure to use the singular form __port__ instead of __ports__ when referring to the bond slave NICs, as in the example bellow.  Check section [Obtaining the NIC names](#obtaining-the-nic-names) to find the names of the NICS devices in the system.
 ```
@@ -2015,6 +2018,7 @@ containerStatuses:
 ...
       message: |
         error: failed to ping registry https://image-registry.openshift-image-registry.svc:5000: Get "https://image-registry.openshift-image-registry.svc:5000/": dial tcp 172.30.53.141:5000: i/o timeout
+```
 
 And many other issues in which the kubelet takes an active role:
 
