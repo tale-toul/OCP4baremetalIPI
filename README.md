@@ -2094,7 +2094,7 @@ virsh -c qemu:///system dumpxml bmipi-worker3 |grep -A 5 "interface type='networ
       <link state='up'/>
 ```
 Simulate the unplugging of ens4.  Run the following command from the hypervisor (metal instance).
-```
+
 Let's assume that ens4 is vnet135 and shut it down with the following command in the hypervisor
 ```
 virsh -c qemu:///system domif-setlink bmipi-worker3 vnet135 down
