@@ -33,6 +33,23 @@ platform:
         hardwareProfile: libvirt
         rootDeviceHints:
             deviceName: /dev/vda
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens3
 {% endfor %}
 {% for item in worker_names %}
       - name: {{ item }}
@@ -47,6 +64,23 @@ platform:
         hardwareProfile: libvirt
         rootDeviceHints:
             deviceName: /dev/vda
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens3
 {% endfor %}
 pullSecret: '{{ lookup('file', 'pull-secret')  }}'
 sshKey: |

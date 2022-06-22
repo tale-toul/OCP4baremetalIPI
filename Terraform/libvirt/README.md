@@ -310,7 +310,7 @@ The result from applying the variables is something like:
 
 The MAC addresses for worker nodes are dynamically created using a base and a loop variable in the terraform template file libvirt.tf
 
-The count.index variable takes values from 0 to 16, that must be converted to an hexadecimal character 0 to a, this is done with the [format terraform function](https://www.terraform.io/language/functions/format):
+The _count_ variable gets its value from the input variable number_of_workers, which can take values from 0 to 16, then that value must be converted to an hexadecimal character 0 to f (in lower case), this is done with the [format terraform function](https://www.terraform.io/language/functions/format):
 
 ```
 network_interface {

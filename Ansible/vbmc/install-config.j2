@@ -33,6 +33,23 @@ platform:
           password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
         bootMACAddress: {{ master_provision_mac_base }}{{ loop.index0 }}
         hardwareProfile: libvirt
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens5
 {% endfor %}
 {% for item in worker_names %}
       - name: {{ item }}
@@ -44,6 +61,23 @@ platform:
           password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
         bootMACAddress: {{ worker_provision_mac_base }}{{ '%x' % loop.index0 }}
         hardwareProfile: libvirt
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens5
 {% endfor %}
 pullSecret: '{{ lookup('file', 'pull-secret') }}'
 sshKey: |

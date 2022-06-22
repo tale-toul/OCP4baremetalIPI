@@ -154,6 +154,11 @@ resource "libvirt_domain" "master_domains" {
     mac        = "${var.master_chucky_mac_base}${count.index}"
   }
 
+  network_interface {
+    network_id = libvirt_network.chucky.id
+    mac        = format("52:54:00:49:6d:7%x",count.index)
+  }
+
   boot_device {
     dev = ["hd","network"]
   }
@@ -211,6 +216,11 @@ resource "libvirt_domain" "worker_domains" {
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = format("${var.worker_chucky_mac_base}%x",count.index)
+  }
+
+  network_interface {
+    network_id = libvirt_network.chucky.id
+    mac        = format("52:54:00:5b:6d:9%x",count.index)
   }
 
   boot_device {

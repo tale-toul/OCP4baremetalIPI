@@ -49,6 +49,11 @@
 * [Enable Internal Image Registry](#enable-internal-image-registry)
   * [Add Storage to the Worker Nodes](#add-storage-to-the-worker-nodes)
   * [Make the internal image registry operational](#make-the-internal-image-registry-operational)
+* [Using a bonding interface as the main NIC](#using-a-bonding-interface-as-the-main-nic)
+  * [Obtaining the NIC names](#obtaining-the-nic-names)
+  * [Create the bonding interface after cluster installation](#create-the-bonding-interface-after-cluster-installation)
+  * [Create the bonding interface during cluster installation](#create-the-bonding-interface-during-cluster-installation)
+  * [Test the bonding interface](#test-the-bonding-interface)
 
 ## Introduction
 
@@ -1833,3 +1838,341 @@ image-registry-547586978b-2s9vb                    1/1     Running   1          
 ...
 ```
 The internal image registry is ready for use.
+
+## Using a bonding interface as the main NIC
+
+To install the cluster using a bonding interface as the main NIC in all nodes (master and workers), the nodes need 2 ethernet NICS connected to the routable network.  If the installation is usng a provisioning network, an additional NIC connected to the provisioning network is required.  The terraform libvirt.tf template takes care of the creation of all the NICs.
+
+There are tow pptions to create the bonding interface in the nodes: Let the Openshift installer create the bonding interface (preferred); create the bonding interface after the OCP cluster has been installed.
+
+### Obtaining the NIC names
+
+To find out the names that RHELCOS will assign to the devices associated with the network interfaces follow this steps, do this before running the openshift installer.
+
+* Find out the URL for the RHELCOS iso image for your hardware architecture.  This step uses the openshift installer binary so it must be run from the provisioning host after the support_setup ansible playbook has been run.
+```
+./openshift-baremetal-install coreos print-stream-json|grep location|grep iso|grep x86_64
+"location": "https://rhcos-redirector.apps.art.xq1c.p1.openshiftapps.com/art/storage/releases/rhcos-4.10/410.84.202201251210-0/x86_64/rhcos-410.84.202201251210-0-live.x86_64.iso",
+```
+* Download the iso image obtained in the previous step.  Run this command in the metal instance.
+```
+wget https://rhcos-redirector.apps.art.xq1c.p1.openshiftapps.com/art/storage/releases/rhcos-4.10/410.84.202201251210-0/x86_64/rhcos-410.84.202201251210-0-live.x86_64.iso
+```
+* Copy the iso image to the directory representing the default libvirt storage pool 
+```
+sudo cp rhcos-410.84.202201251210-0-live.x86_64.iso /var/lib/libvirt/images/
+```
+* Add a CDROM device to one of the VMs.  All VMs have the same network configuration so only one of them will be inspected.  Virt Manager can be used to, click the lightbulb icon (Show virtual hardware details) --> Add Hardware -> Storage -> Device type: CDROM device -> Select or create custom storage -> Manage -> select the iso image file from the list -> Finish
+
+* Enable the boot menu.  This allows selecting the CDROM as a boot device while not changing the default device boot order.  Again use the virt manager for convenience.  Click the lightbulb icon (Show virtual hardware details) --> Boot Options -> Enable boot menu -> Apply
+
+* Boot up the VM using the CDROM as boot device.  Again use the virt manager for convenience. 
+
+     Click the monitor icon (Show the graphical console) -> Push the Play button (Power on the Virtual Machine) -> Click on the terminal area and press Escape to show the boot menu. 
+
+     If the menu does not show up, leave the termina by pressing CTRL + ALT, click the "Shut down the VM" button and select Force reset.  
+
+     When the boot menu appears, select DVD/CD option by pressing the number to the left of that option in the keyboard.
+
+* When RHELCOS boots up, it returns a shell prompt.  Run any of the following commands to find the network interface names
+```
+nmcli con show
+
+ip link
+```
+
+* Shutdown the VM.  Again use the virt manager for convenience.  Click the "Shut down the VM" button and select Force reset.  
+
+* (Optional) Remove the CDROM device from the VM.  Virt Manager can be used to, click the lightbulb icon (Show virtual hardware details) --> Select the CDROM device -> Remove 
+
+### Create the bonding interface after cluster installation
+
+This method doesn't really work as expected, the cluster is installed but the bonding interface was not successfully created, see note at the end of the section.
+
+To create the bonding interface after cluster installation, start with two NICS coneected to the same routable network (chucky), in this example they are called ens4 and ens5.  The name of the NICS is assigned by RHELCOS, to find out what names will be used, see section [Obtaining the NIC names](#obtaining-the-nic-names)
+
+We only want to use one NIC to deploy the cluster.  The trick is to disable the second interface during installation.  
+  
+To disable the NIC ens5 use the following networkConfig section for the nodes in the install-config.yaml file.  The ens4 NIC is enabled and gets an IP from the DHCP server.  The ens5 NIC is  activated but does not get any IP, neither v4 or v6.  
+```
+networkConfig:
+  interfaces:
+  - name: ens4
+    type: ethernet
+    state: up
+    ipv4:
+      dhcp: true
+      enabled: true
+  - name: ens5
+    type: ethernet
+    state: up
+    ipv4:
+      enabled: false
+    ipv6:
+      enabled: false
+```
+If the state of the ens5 NIC is __absent__ or __down__ the Network Manager in RHELCOS brings it up and sets it to get an IP via DHCP, this causes trouble because the routing table prioritizes the first interface (ens4) but the in the routing table because two NICS are connected to the same netowrk, and the OCP installation does not complete successfully.
+
+Besides the above, the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841) must be applied.  The files Ansible/vbmc/cluster-network-03-nic-master.yml and Ansible/vbmc/cluster-network-03-nic-worker.yml can be used to disable DHCP for ens5 in all masters and workers.
+
+When the installation is completed we end up with a painted into the corner situation.  We have a working cluster with an active ens4 NIC, and a disabled ens5.  However attempting to create a bond using ens4 and ens5 is likely to disconnect the node(s) from the network, effectively moving them out of reach and impossible to recover.  The following information notice may give an explanation: https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-observing-node-network-state.html#virt-about-nmstate_k8s-nmstate-observing-node-network-state 
+
+
+### Create the bonding interface during cluster installation
+
+To install the cluster using a bonding interface created as part of the installation process follow the instructions [in the official documentation](https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-updating-node-network-config.html#virt-example-bond-nncp_k8s_nmstate-updating-node-network-config), make sure to use the singular form __port__ instead of __ports__ when referring to the bond slave NICs, as in the example bellow.  Check section [Obtaining the NIC names](#obtaining-the-nic-names) to find the names of the NICS devices in the system.
+```
+networkConfig:
+  interfaces:
+  - name: bond0
+    type: bond
+    state: up
+    ipv4:
+      dhcp: true
+      enabled: true
+    ipv6:
+      enabled: false
+    link-aggregation:
+      mode: active-backup
+      options:
+        miimon: '140'
+      port:
+      - ens4
+      - ens5
+```
+
+There is no need to apply the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841).
+
+During the installation, the kubelet certificate requests for the worker nodes are not automatically approved by the machine approver operator and must be approved manually.  This is a bug and should not happen.  
+
+The logs in the machine approver operator show the following messages.  The messages exist for all worker nodes and repeat until the csrs are manually approved.  The last messages coincide with the manual approval of the certificate requests:
+```
+oc logs machine-approver-8945758f5-6nllp -c machine-approver-controller -n openshift-cluster-machine-approver
+...
+I0621 10:09:12.966921       1 controller.go:120] Reconciling CSR: csr-9rxtp
+I0621 10:09:12.986320       1 csr_check.go:157] csr-9rxtp: CSR does not appear to be client csr
+I0621 10:09:12.989674       1 csr_check.go:545] retrieving serving cert from worker0.zianuro.poin.care (192.168.55.30:10250)
+I0621 10:09:12.990940       1 csr_check.go:182] Failed to retrieve current serving cert: remote error: tls: internal error
+I0621 10:09:12.991002       1 csr_check.go:202] Falling back to machine-api authorization for worker0.zianuro.poin.care
+E0621 10:09:12.991027       1 csr_check.go:360] csr-9rxtp: Serving Cert: No target machine for node "worker0.zianuro.poin.care"
+I0621 10:09:12.991050       1 csr_check.go:205] Could not use Machine for serving cert authorization: Unable to find machine for node
+I0621 10:09:12.995235       1 controller.go:228] csr-9rxtp: CSR not authorized
+I0621 10:10:07.244963       1 controller.go:120] Reconciling CSR: csr-bpcjd
+I0621 10:10:07.261427       1 csr_check.go:157] csr-bpcjd: CSR does not appear to be client csr
+I0621 10:10:07.263773       1 csr_check.go:545] retrieving serving cert from worker2.zianuro.poin.care (192.168.55.32:10250)
+I0621 10:10:07.264678       1 csr_check.go:182] Failed to retrieve current serving cert: remote error: tls: internal error
+I0621 10:10:07.264727       1 csr_check.go:202] Falling back to machine-api authorization for worker2.zianuro.poin.care
+E0621 10:10:07.264748       1 csr_check.go:360] csr-bpcjd: Serving Cert: No target machine for node "worker2.zianuro.poin.care"
+I0621 10:10:07.264767       1 csr_check.go:205] Could not use Machine for serving cert authorization: Unable to find machine for node
+I0621 10:10:07.267156       1 controller.go:228] csr-bpcjd: CSR not authorized
+I0621 10:11:48.853525       1 controller.go:120] Reconciling CSR: csr-7cr8r
+I0621 10:11:48.875137       1 controller.go:209] csr-7cr8r: CSR is already approved
+I0621 10:11:48.904754       1 controller.go:120] Reconciling CSR: csr-7cr8r
+I0621 10:11:48.926305       1 controller.go:209] csr-7cr8r: CSR is already approved
+I0621 10:11:48.936748       1 controller.go:120] Reconciling CSR: csr-9rxtp
+I0621 10:11:48.958246       1 controller.go:209] csr-9rxtp: CSR is already approved
+...
+```
+This [KCS article](https://access.redhat.com/solutions/6561351) helps understand the problem with node certificates.
+
+Wait for the message `INFO Destroying the bootstrap resources...`, in another session in the provisioning node, log into the cluster:
+```
+export KUBECONFIG=zianuro/auth/kubeconfig
+```
+Get a list of pending certificate signing requests. 
+```
+oc get csr|grep -i pending
+csr-9rxtp          4m30s   kubernetes.io/kubelet-serving         system:node:worker0.zianuro.poin.care                                         <none>              Pending
+csr-bpcjd          3m36s   kubernetes.io/kubelet-serving         system:node:worker2.zianuro.poin.care                                             <none>              Pending
+```
+When the output contains a csr for each of the worker nodes, approve them with the command:
+```
+for x in $(oc get csr|grep -i pending|awk '{print $1}'); do oc adm certificate approve $x; done
+```
+The kubelet certificates created during installation have a short expiration date of around 24 hours.  Can be checked with the following command:
+```
+for x in $(oc get nodes --no-headers|awk '{print $1}'); do echo $x;oc debug node/${x} -- chroot /host cat /var/lib/kubelet/pki/kubelet-client-current.pem | openssl x509 -dates -noout; done
+master0.zianuro.poin.care                                                                                                                                                                     
+Starting pod/master0zianuropoincare-debug ...                                                                                                                                                 
+To use host binaries, run `chroot /host`                                                                                                                                                      
+notBefore=Jun 22 07:49:46 2022 GMT                                                                                                                                                            
+notAfter=Jun 23 07:31:30 2022 GMT
+...
+```
+This certificates are automatically renewed between 30% and 10% of there valid time remaining, but will require manual approval again, and on every subsequent renewals.
+
+Even if the worker nodes kubelet certificate requests are not approved, the installation will succeed, but several issues will happen during cluster normal operation, like not being able to connect to a node or pod with the following commands:
+```
+oc rsh <podname>
+
+oc debug node/<nodename>
+```
+Another issue is that the image prunner job fails because the pod running the job, can't connect to the registry service:
+```
+oc get pod image-pruner-27590994-sqlvc -o yaml
+
+containerStatuses:
+...
+      message: |
+        error: failed to ping registry https://image-registry.openshift-image-registry.svc:5000: Get "https://image-registry.openshift-image-registry.svc:5000/": dial tcp 172.30.53.141:5000: i/o timeout
+
+And many other issues in which the kubelet takes an active role:
+
+### Test the bonding interface
+
+When the installation is completed open a shell with one of the nodes
+```
+oc debug node/worker3.zianuro.poin.care
+Starting pod/worker3zianuropoincare-debug ...
+To use host binaries, run `chroot /host`
+cPod IP: 192.168.55.33
+If you don't see a command prompt, try pressing enter.
+sh-4.4# chroot /host
+sh-4.4#
+```
+Check the network interfaces.  
+
+In this example the interfaces ens3 and ens4 are slaves of bond0.  All 3 have the same MAC address which originally comes from ens3
+```
+ip link
+2: ens3: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc fq_codel master bond0 state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff
+3: ens4: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc fq_codel master bond0 state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff permaddr 52:54:00:5b:6d:93
+4: bond0: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue master ovs-system state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff
+```
+Check the status of the bond0 interface.  Here we see that the type of bonding is active backup and the active interface is ens4.  Both interfaces are up.
+```
+sh-4.4# cat /proc/net/bonding/bond0 
+Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
+
+Bonding Mode: fault-tolerance (active-backup)
+Primary Slave: None
+Currently Active Slave: ens4
+MII Status: up
+MII Polling Interval (ms): 140
+Up Delay (ms): 0
+Down Delay (ms): 0
+Peer Notification Delay (ms): 0
+
+Slave Interface: ens3
+MII Status: up
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 1
+Permanent HW addr: 52:54:00:a9:6d:93
+Slave queue ID: 0
+
+Slave Interface: ens4
+MII Status: up
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 1
+Permanent HW addr: 52:54:00:5b:6d:93
+Slave queue ID: 0
+```
+Get the names and MACs of the network interfaces.  In this example they are vnet134 and vnet135
+```
+virsh -c qemu:///system dumpxml bmipi-worker3 |grep -A 5 "interface type='network'"
+    <interface type='network'>
+      <mac address='52:54:00:a9:6d:93'/>
+      <source network='chucky' portid='bc096a9d-ccff-479b-af6e-3bd30c427e20' bridge='chucky'/>                                                   
+      <target dev='vnet134'/>
+      <model type='virtio'/>
+      <link state='up'/>
+--
+    <interface type='network'>
+      <mac address='52:54:00:5b:6d:93'/>
+      <source network='chucky' portid='a10f82b3-e3a6-43ed-9712-9f0d64867c35' bridge='chucky'/>                                                   
+      <target dev='vnet135'/>
+      <model type='virtio'/>
+      <link state='up'/>
+```
+Simulate the unplugging of ens4.  Run the following command from the hypervisor (metal instance).
+```
+Let's assume that ens4 is vnet135 and shut it down with the following command in the hypervisor
+```
+virsh -c qemu:///system domif-setlink bmipi-worker3 vnet135 down
+Device updated successfully
+```
+Check the interface link in the hypervisor
+```
+virsh -c qemu:///system domif-getlink bmipi-worker3 vnet135
+vnet135 down
+```
+Check the link inside the VM.  ens4 has NO-CARRIER and is in state DOWN, however the bond interface is still working.
+```
+ip link
+2: ens3: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc fq_codel master bond0 state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff
+3: ens4: <NO-CARRIER,BROADCAST,MULTICAST,SLAVE,UP> mtu 1500 qdisc fq_codel master bond0 state DOWN mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff permaddr 52:54:00:5b:6d:93
+4: bond0: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue master ovs-system state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:a9:6d:93 brd ff:ff:ff:ff:ff:ff
+```
+Further details can be obtained from the bond interface.  The active slave has changed to ens3 but the MAC address is still the same as before.
+```
+cat /proc/net/bonding/bond0 
+Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
+
+Bonding Mode: fault-tolerance (active-backup)
+Primary Slave: None
+Currently Active Slave: ens3
+MII Status: up
+MII Polling Interval (ms): 140
+Up Delay (ms): 0
+Down Delay (ms): 0
+Peer Notification Delay (ms): 0
+
+Slave Interface: ens3
+MII Status: up
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 1
+Permanent HW addr: 52:54:00:a9:6d:93
+Slave queue ID: 0
+
+Slave Interface: ens4
+MII Status: down
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 2
+Permanent HW addr: 52:54:00:5b:6d:93
+Slave queue ID: 0
+```
+Bring the ens4 interface back up
+```
+virsh -c qemu:///system domif-setlink bmipi-worker3 vnet135 up
+Device updated successfully
+```
+Check the status of the bond interface.  The ens4 interface is now up but the main slave has not changed.  During the whole tests there has not been any appreciable disruption to the communications with the node.
+```
+cat /proc/net/bonding/bond0  
+Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
+
+Bonding Mode: fault-tolerance (active-backup)
+Primary Slave: None
+Currently Active Slave: ens3
+MII Status: up
+MII Polling Interval (ms): 140
+Up Delay (ms): 0
+Down Delay (ms): 0
+Peer Notification Delay (ms): 0
+
+Slave Interface: ens3
+MII Status: up
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 1
+Permanent HW addr: 52:54:00:a9:6d:93
+Slave queue ID: 0
+
+Slave Interface: ens4
+MII Status: up
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 2
+Permanent HW addr: 52:54:00:5b:6d:93
+Slave queue ID: 0
+```
