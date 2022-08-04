@@ -52,12 +52,13 @@
     owner: root
     group: root
     mode: '0644'
+#The state=restarted makes sure that in additional executions of the playbook the sushyd daemon will read the new config files and use the newly generated password
 - name: Enable and start sushy tools service
   systemd:
     daemon_reload: yes
     name: sushyd
     enabled: yes
-    state: started
+    state: restarted
 - name: Allow access to sushy tools service in firewall
   firewalld:
     port: "{{ sushy_tools_port }}/tcp"

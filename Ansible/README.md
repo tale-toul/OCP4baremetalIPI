@@ -160,7 +160,7 @@ The list of variables used by the playbook are:
 
 * **sushy_tools_port** 
 
-* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Defined in **Terraform/libvirt**.  Default value 52:54:00:a9:6d:9
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Defined in **Terraform/libvirt**.  Default value 52:54:00:a9:6d:
  
 
 * **worker_names**.- List of worker node names.  Obtained as an output variable from **Terraform/libvirt**
@@ -196,60 +196,17 @@ $ ssh -J ec2-user@3.219.143.250  root@192.168.30.3
 
 ### Setting up DNS and DHCP
 
-The configuration files for DNS and DHCP are static and can be found in the support-files directory.  Changing this files may affect the configuration of other parts and will probably break the setup and installation process.
+The configuration for DNS and DHCP is applyed using the ansible role **setup_support_services** called from the support_setup playbook.  This role installs the rpm packages required to provide the services, dynamically creates the configuration files using templates and finally enables and starts the DHCP and DNS services.
 
-A group of tasks is dedicated to configure, enable and start the DNS and DHCP service in the supporting VM.
-
-The first two task copy the configuration files for DNS and DHCP, they use the synchronize module which calls the rsync command.  
+The creation of the worker entries in the dhcpd.conf template uses a loop to define the MAC address reservation, the IP address and the hostname to assign to the host. The formating string for the mac address takes a base and adds the loop count converted to hexadecimal using 2 characters padded with a zero to the left if necessary.
 ```
-- name: Copy DNS and DHCP configuration files 
-  synchronize:
-    src: ../support-files/etc/
-    dest: /etc
-    use_ssh_args: yes
-    owner: no
-    group: no
-- name: Copy DNS zone files 
-  synchronize:
-    src: ../support-files/var/
-    dest: /var
-    use_ssh_args: yes
-    owner: no
-    group: no
-```
-
-The rsync command will directly connect from the control host to the support host instead of using ssh as other tasks do, as a consequence the ssh tunnel through the EC2 jumphost created by other tasks is not available by default when using the synchronize module.  To solve this situation the option `use_ssh_args: yes` is used, which forces synchronize to add the ssh options defined in the vars section of the inventory file `ansible_ssh_common_args='-o ProxyJump="ec2-user@3.87.151.210"'` resulting in the following command that will make the correct ssh connection through the jump EC2 host:
-
-```
-/usr/bin/rsync --delay-updates -F --compress --archive --no-owner --no-group --rsh=/usr/bin/ssh -S none -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -C -o ControlM
-aster=auto -o ControlPersist=60s -o ProxyJump=\"ec2-user@3.21.134.25\" --rsync-path=sudo rsync --out-format=<<CHANGED>>%i %n%L /home/user1/OCP4baremetalIPI/support-files/var/ root@192.168.30.3:/var"
-```
-The next two tasks change the owner and group of DNS zone files to named:named.  In order to do this, the first taks creates a list of the files to be changed.  This task is run in the control host from where the files were copied to the remote host in the previous tasks, and the list is saved in a variable.
-
-The next task uses a loop to change the owner and group of the files saved in the list, in the remote host.
-
-```
-- name: Get list of copied zones files
-  local_action: command ls -1 ../support-files/var/named
-  register: _zone_files
-  become: no
-- name: Change ownership of zone files
-  file:
-    path: /var/named/{{ item }}
-    owner: named
-    group: named
-  loop: "{{ _zone_files.stdout_lines }}"
-```
-The final task enables and starts the DHCP and DNS services:
-```
-- name: Enable and start DNS and DHCP services
-  service:
-    name: "{{ item }}"
-    state: started 
-    enabled: yes
-  loop: 
-    - named
-    - dhcpd
+{% for item in worker_names %}
+host worker{{ loop.index0 }} {
+  hardware ethernet {{ worker_chucky_mac_base }}{{ '%02x' % loop.index0 }};
+  fixed-address {{ chucky_short_net }}.{{ 30 + loop.index0 }};
+  option host-name "worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}";
+}
+{% endfor %}
 ```
 
 ### Set up virtual BMC or Red Fish
@@ -338,14 +295,16 @@ quay.io/openshift-release-dev/ocp-release@sha256:386f4e08c48d01e0c73d294a88bb64f
 
 ### Dynamic MAC address assignment
 
-The MAC addresses for worker nodes are dynamically created using a base and a loop variable in template files hcpd.conf.j2 and install-config.j2.
+The MAC addresses for worker nodes are dynamically generated using a base and a loop variable in template files dhcpd.conf.j2 and install-config.j2.
 
-The loop.index0 variable takes values from 0 to 16, that must be converted to an hexadecimal character 0 to a, this is done with the [python expression](https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting) **'%x' % loop.index0**:
+The loop.index0 variable takes values starting at 0 and is increased by one on each loop iteration, this value must be converted to an hexadecimal character from 0x00 to 0x80, that is from 0 to 128. This is done with the [python expression](https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting) **'%02x' % loop.index0**.  The %02x adds two hexadecimal numbers padding with one zero infront if only one digit is provided (0 to f):
+
+The reason to limit the loop.index0 to 128 is because the max number is 256 (ff) but in case an additional network interface is created for bonding, double the MAC addresses are required.
 
 ```
 {% for item in worker_names %}
 host worker{{ loop.index0 }} {
-  hardware ethernet {{ worker_chucky_mac_base }}{{ '%x' % loop.index0 }};
+  hardware ethernet {{ worker_chucky_mac_base }}{{ '%02x' % loop.index0 }};
   fixed-address {{ chucky_short_net }}.{{ 30 + loop.index0 }};
   option host-name "worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}";
 }

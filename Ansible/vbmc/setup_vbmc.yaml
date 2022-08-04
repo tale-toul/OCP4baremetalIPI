@@ -9,12 +9,6 @@
     owner: root
     group: root
     mode: '0644'
-- name: Enable and start Virtual BMC service
-  systemd:
-    daemon_reload: yes
-    name: vbmcd
-    enabled: yes
-    state: started
 - name: Create directories for VBMC host config files
   file:
     path: /root/.vbmc/{{ item }}
@@ -27,6 +21,13 @@
   loop: "{{ master_names + worker_names }}"
   loop_control:
     index_var: x
+#The state=restarted makes sure that in additional executions of the playbook the vbmcd daemon will read the new config files and use the newly generated password
+- name: Enable and start Virtual BMC service
+  systemd:
+    daemon_reload: yes
+    name: vbmcd
+    enabled: yes
+    state: restarted
 - name: Allow access to vbmc VMs ports in firewall
   firewalld:
     port: "{{ 7000 + x }}/udp"

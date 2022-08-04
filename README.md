@@ -51,21 +51,21 @@
   * [Make the internal image registry operational](#make-the-internal-image-registry-operational)
 * [Using a bonding interface as the main NIC](#using-a-bonding-interface-as-the-main-nic)
   * [Obtaining the NIC names](#obtaining-the-nic-names)
-  * [Create the bonding interface after cluster installation](#create-the-bonding-interface-after-cluster-installation)
   * [Create the bonding interface during cluster installation](#create-the-bonding-interface-during-cluster-installation)
+  * [Create the bonding interface after cluster installation](#create-the-bonding-interface-after-cluster-installation)
   * [Test the bonding interface](#test-the-bonding-interface)
 
 ## Introduction
 
 This repository contains documentation and supporting files to deploy an Openshift 4 cluster using the IPI method in a **baremetal** cluster on libvirt/KVM virtual machines.
 
-This instruction are meant to deploy a test cluster and help understand the baremetal IPI installation method in Openshift 4.  As an additional benefit using libvirt/KVM results in a reduced cost compared to deploying the same cluster using real baremetal servers.
+These instructions are intended to deploy tests environments and help understand the baremetal IPI installation method, it is not recommended to deploy a production cluster using the method described here.  As an additional benefit using libvirt/KVM reduces the cost compared to deploying the same cluster using real baremetal servers.
 
 Even in the scenario depicted here, a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
 
 The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively.
 
-In addition to the manual instructions, automation support using terraform and ansible is provided to deploy the infrastructure components both for [provisioning network based clusters (VMBC)](#creating-the-infrastructure-with-terraform-and-ansible) and for [non provisioning network based clusters (Redfish)](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
+In addition to the manual instructions, automation using terraform and ansible is provided to deploy the infrastructure components both for [provisioning network based clusters (VMBC)](#creating-the-infrastructure-with-terraform-and-ansible) and for [non provisioning network based clusters (Redfish)](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
 
 ## Reference documentation
 
@@ -704,7 +704,9 @@ $ ./openshift-baremetal-install create cluster --dir ocp4/
 
 ## Creating the infrastructure with terraform and ansible
 
-The infrasctucture required to deploy the Openshift cluster can be created automatically with the terraform templates and ansible playbooks provided in this repository.  The process requires a few steps run in a serialized manner due to the matroshka design of the components.  The metal instance is created in the first place, then it is configured to support libvirt, then the libvirt resources are created, and finally some libvirts VMs are configured to support Openshift.
+The infrasctucture required to deploy the Openshift cluster can be created with the terraform templates and ansible playbooks provided in this repository.
+
+There are several configuration options to adapt the resulting infrastructure to the particular requirements of the user.
 
 For these instructions to run successfully [terraform](https://www.terraform.io) and [ansible](https://www.ansible.com) must be installed and working in the controlling host.
 
@@ -1841,10 +1843,9 @@ The internal image registry is ready for use.
 
 ## Using a bonding interface as the main NIC
 
-To install the cluster using a bonding interface as the main NIC in all nodes (master and workers), the nodes need 2 ethernet NICS connected to the routable network.  If the installation is usng a provisioning network, an additional NIC connected to the provisioning network is required.  The terraform libvirt.tf template takes care of the creation of all the NICs.
+To install the cluster using a bonding interface as the main NIC in all nodes (master and workers), each node needs 2 ethernet NICS connected to the routable network.  If the installation is usng a provisioning network, an additional NIC connected to the provisioning network is required.  The terraform libvirt.tf template takes care of the creation of all the NICs.  
 
-There are two pptions to create the bonding interface in the nodes: Let the Openshift installer create the bonding interface (preferred); create the bonding interface after the OCP cluster has been installed.
-
+There are two options to create the bonding interface in the nodes: Use terraform and ansible to create the bonding interface (preferred); or create the bonding interface after the cluster has been installed, this last option does not really work as of 4.10.
 
 ### Obtaining the NIC names
 
@@ -1859,7 +1860,7 @@ To find out the names that RHELCOS will assign to the devices associated with th
 ```
 wget https://rhcos-redirector.apps.art.xq1c.p1.openshiftapps.com/art/storage/releases/rhcos-4.10/410.84.202201251210-0/x86_64/rhcos-410.84.202201251210-0-live.x86_64.iso
 ```
-* Copy the iso image to the directory representing the default libvirt storage pool 
+* Copy the iso image to the directory representing the default libvirt storage pool
 ```
 sudo cp rhcos-410.84.202201251210-0-live.x86_64.iso /var/lib/libvirt/images/
 ```
@@ -1867,11 +1868,11 @@ sudo cp rhcos-410.84.202201251210-0-live.x86_64.iso /var/lib/libvirt/images/
 
 * Enable the boot menu.  This allows selecting the CDROM as a boot device while not changing the default device boot order.  Again use the virt manager for convenience.  Click the lightbulb icon (Show virtual hardware details) --> Boot Options -> Enable boot menu -> Apply
 
-* Boot up the VM using the CDROM as boot device.  Again use the virt manager for convenience. 
+* Boot up the VM using the CDROM as boot device.  Again use the virt manager for convenience.
 
-     Click the monitor icon (Show the graphical console) -> Push the Play button (Power on the Virtual Machine) -> Click on the terminal area and press Escape to show the boot menu. 
+     Click the monitor icon (Show the graphical console) -> Push the Play button (Power on the Virtual Machine) -> Click on the terminal area and press Escape to show the boot menu.
 
-     If the menu does not show up, leave the termina by pressing CTRL + ALT, click the "Shut down the VM" button and select Force reset.  
+     If the menu does not show up, leave the termina by pressing CTRL + ALT, click the "Shut down the VM" button and select Force reset.
 
      When the boot menu appears, select DVD/CD option by pressing the number to the left of that option in the keyboard.
 
@@ -1882,66 +1883,44 @@ nmcli con show
 ip link
 ```
 
-* Shutdown the VM.  Again use the virt manager for convenience.  Click the "Shut down the VM" button and select Force reset.  
+* Shutdown the VM.  Again use the virt manager for convenience.  Click the "Shut down the VM" button and select Force reset.
 
-* (Optional) Remove the CDROM device from the VM.  Virt Manager can be used to, click the lightbulb icon (Show virtual hardware details) --> Select the CDROM device -> Remove 
-
-### Create the bonding interface after cluster installation
-
-This method doesn't really work as expected, the cluster is installed but the bonding interface was not successfully created, see note at the end of the section.
-
-To create the bonding interface after cluster installation, start with two NICS coneected to the same routable network (chucky), in this example they are called ens4 and ens5.  The name of the NICS is assigned by RHELCOS, to find out what names will be used, see section [Obtaining the NIC names](#obtaining-the-nic-names)
-
-We only want to use one NIC to deploy the cluster.  The trick is to disable the second interface during installation.  
-  
-To disable the NIC ens5 use the following networkConfig section for the nodes in the install-config.yaml file.  The ens4 NIC is enabled and gets an IP from the DHCP server.  The ens5 NIC is  activated but does not get any IP, neither v4 or v6.  
-```
-networkConfig:
-  interfaces:
-  - name: ens4
-    type: ethernet
-    state: up
-    ipv4:
-      dhcp: true
-      enabled: true
-  - name: ens5
-    type: ethernet
-    state: up
-    ipv4:
-      enabled: false
-    ipv6:
-      enabled: false
-```
-If the state of the ens5 NIC is __absent__ or __down__ the Network Manager in RHELCOS brings it up and sets it to get an IP via DHCP, this causes trouble because the routing table prioritizes the first interface (ens4) but the in the routing table because two NICS are connected to the same netowrk, and the OCP installation does not complete successfully.
-
-Besides the above, the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841) must be applied.  The files Ansible/vbmc/cluster-network-03-nic-master.yml and Ansible/vbmc/cluster-network-03-nic-worker.yml can be used to disable DHCP for ens5 in all masters and workers.
-
-When the installation is completed we end up with a painted into the corner situation.  We have a working cluster with an active ens4 NIC, and a disabled ens5.  However attempting to create a bond using ens4 and ens5 is likely to disconnect the node(s) from the network, effectively moving them out of reach and impossible to recover.  The following information notice may give an explanation: https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-observing-node-network-state.html#virt-about-nmstate_k8s-nmstate-observing-node-network-state 
+* (Optional) Remove the CDROM device from the VM.  Virt Manager can be used to, click the lightbulb icon (Show virtual hardware details) --> Select the CDROM device -> Remove
 
 
 ### Create the bonding interface during cluster installation
 
 The libvirt terraform template and the support_setup ansible playbook in this repository create the neccesary infrastructure and configuration files to deploy the cluster with a bonding interface.
 
-To install the cluster using a bonding interface created as part of the installation process follow the instructions [in the official documentation](https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-updating-node-network-config.html#virt-example-bond-nncp_k8s_nmstate-updating-node-network-config), make sure to use the singular form __port__ instead of __ports__ when referring to the bond slave NICs, as in the example bellow.  Check section [Obtaining the NIC names](#obtaining-the-nic-names) to find the names of the NICS devices in the system.
+This creation process mainly depends on two variables: **bonding_nic** and **ocp_minor_version**.  If **bonding_nic=true** terraform adds an additional NIC connected to the routable network to form the bonding device, and ansible adds the networkConfig section to the install-config.yaml file with the configuration of the bonding device, but still **ocp_minor_version** needs to be 10 or above for the additional NIC and the bonding configuration to be created, this is because OCP 4.10 is the first version in which the installation supports a bonding NIC.
 ```
-networkConfig:
-  interfaces:
-  - name: bond0
-    type: bond
-    state: up
-    ipv4:
-      dhcp: true
-      enabled: true
-    ipv6:
-      enabled: false
-    link-aggregation:
-      mode: active-backup
-      options:
-        miimon: '140'
-      port:
-      - ens4
-      - ens5
+ocp_version = "4.10.22"
+bonding_nic = true
+```
+
+The ansible playbook **support_setup.yaml**, in particular the template install-config.j2 for vbmc and redfish, takes care of creating a correct networkConfig section for all nodes if the aforementioned variables have been correctly defined.
+```
+{% if bonding_nic and (ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int  >= 10) %}
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens3
+{% else %}
+#Version 4.{{ ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int }} not compatible with bonding interface for installation
+{% endif %}
 ```
 
 There is no need to apply the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841).
@@ -1982,7 +1961,7 @@ Wait for the message `INFO Destroying the bootstrap resources...`, in another se
 ```
 export KUBECONFIG=zianuro/auth/kubeconfig
 ```
-Get a list of pending certificate signing requests. 
+Get a list of pending certificate signing requests.
 ```
 oc get csr|grep -i pending
 csr-9rxtp          4m30s   kubernetes.io/kubelet-serving         system:node:worker0.zianuro.poin.care                                         <none>              Pending
@@ -1995,10 +1974,10 @@ for x in $(oc get csr|grep -i pending|awk '{print $1}'); do oc adm certificate a
 The kubelet certificates created during installation have a short expiration date of around 24 hours.  Can be checked with the following command:
 ```
 for x in $(oc get nodes --no-headers|awk '{print $1}'); do echo $x;oc debug node/${x} -- chroot /host cat /var/lib/kubelet/pki/kubelet-client-current.pem | openssl x509 -dates -noout; done
-master0.zianuro.poin.care                                                                                                                                                                     
-Starting pod/master0zianuropoincare-debug ...                                                                                                                                                 
-To use host binaries, run `chroot /host`                                                                                                                                                      
-notBefore=Jun 22 07:49:46 2022 GMT                                                                                                                                                            
+master0.zianuro.poin.care
+Starting pod/master0zianuropoincare-debug ...
+To use host binaries, run `chroot /host`
+notBefore=Jun 22 07:49:46 2022 GMT
 notAfter=Jun 23 07:31:30 2022 GMT
 ...
 ```
@@ -2022,6 +2001,39 @@ containerStatuses:
 
 And many other issues in which the kubelet takes an active role:
 
+### Create the bonding interface after cluster installation
+
+This method doesn't really work as expected, the cluster is installed but the bonding interface was not successfully created, see note at the end of the section.
+
+To create the bonding interface after cluster installation, start with two NICS coneected to the same routable network (chucky), in this example they are called ens4 and ens5.  The name of the NICS is assigned by RHELCOS, to find out what names will be used, see section [Obtaining the NIC names](#obtaining-the-nic-names)
+
+We only want to use one NIC to deploy the cluster.  The trick is to disable the second interface during installation.
+
+To disable the NIC ens5 use the following networkConfig section for the nodes in the install-config.yaml file.  The ens4 NIC is enabled and gets an IP from the DHCP server.  The ens5 NIC is  activated but does not get any IP, neither v4 or v6.  
+```
+networkConfig:
+  interfaces:
+  - name: ens4
+    type: ethernet
+    state: up
+    ipv4:
+      dhcp: true
+      enabled: true
+  - name: ens5
+    type: ethernet
+    state: up
+    ipv4:
+      enabled: false
+    ipv6:
+      enabled: false
+```
+If the state of the ens5 NIC is __absent__ or __down__ the Network Manager in RHELCOS brings it up and sets it to get an IP via DHCP, this causes trouble because the routing table prioritizes the first interface (ens4) but the in the routing table because two NICS are connected to the same netowrk, and the OCP installation does not complete successfully.
+
+Besides the above, the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841) must be applied.  The files Ansible/vbmc/cluster-network-03-nic-master.yml and Ansible/vbmc/cluster-network-03-nic-worker.yml can be used to disable DHCP for ens5 in all masters and workers.
+
+When the installation is completed we end up with a painted into the corner situation.  We have a working cluster with an active ens4 NIC, and a disabled ens5.  However attempting to create a bond using ens4 and ens5 is likely to disconnect the node(s) from the network, effectively moving them out of reach and impossible to recover.  The following information notice may give an explanation: https://docs.openshift.com/container-platform/4.10/networking/k8s_nmstate/k8s-nmstate-observing-node-network-state.html#virt-about-nmstate_k8s-nmstate-observing-node-network-state 
+
+
 ### Test the bonding interface
 
 When the installation is completed open a shell with one of the nodes
@@ -2034,7 +2046,7 @@ If you don't see a command prompt, try pressing enter.
 sh-4.4# chroot /host
 sh-4.4#
 ```
-Check the network interfaces.  
+Check the network interfaces.
 
 In this example the interfaces ens3 and ens4 are slaves of bond0.  All 3 have the same MAC address which originally comes from ens3
 ```
@@ -2048,7 +2060,7 @@ ip link
 ```
 Check the status of the bond0 interface.  Here we see that the type of bonding is active backup and the active interface is ens4.  Both interfaces are up.
 ```
-sh-4.4# cat /proc/net/bonding/bond0 
+sh-4.4# cat /proc/net/bonding/bond0
 Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
 
 Bonding Mode: fault-tolerance (active-backup)
@@ -2081,14 +2093,14 @@ Get the names and MACs of the network interfaces.  In this example they are vnet
 virsh -c qemu:///system dumpxml bmipi-worker3 |grep -A 5 "interface type='network'"
     <interface type='network'>
       <mac address='52:54:00:a9:6d:93'/>
-      <source network='chucky' portid='bc096a9d-ccff-479b-af6e-3bd30c427e20' bridge='chucky'/>                                                   
+      <source network='chucky' portid='bc096a9d-ccff-479b-af6e-3bd30c427e20' bridge='chucky'/>
       <target dev='vnet134'/>
       <model type='virtio'/>
       <link state='up'/>
 --
     <interface type='network'>
       <mac address='52:54:00:5b:6d:93'/>
-      <source network='chucky' portid='a10f82b3-e3a6-43ed-9712-9f0d64867c35' bridge='chucky'/>                                                   
+      <source network='chucky' portid='a10f82b3-e3a6-43ed-9712-9f0d64867c35' bridge='chucky'/>
       <target dev='vnet135'/>
       <model type='virtio'/>
       <link state='up'/>
@@ -2117,7 +2129,7 @@ ip link
 ```
 Further details can be obtained from the bond interface.  The active slave has changed to ens3 but the MAC address is still the same as before.
 ```
-cat /proc/net/bonding/bond0 
+cat /proc/net/bonding/bond0
 Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
 
 Bonding Mode: fault-tolerance (active-backup)
@@ -2152,7 +2164,7 @@ Device updated successfully
 ```
 Check the status of the bond interface.  The ens4 interface is now up but the main slave has not changed.  During the whole tests there has not been any appreciable disruption to the communications with the node.
 ```
-cat /proc/net/bonding/bond0  
+cat /proc/net/bonding/bond0
 Ethernet Channel Bonding Driver: v4.18.0-305.45.1.el8_4.x86_64
 
 Bonding Mode: fault-tolerance (active-backup)

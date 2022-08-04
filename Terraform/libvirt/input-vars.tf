@@ -59,8 +59,8 @@ variable "number_of_workers" {
   default = 3
 
   validation {
-    condition = var.number_of_workers > 0 && var.number_of_workers <= 16
-    error_message = "The number of workers that can be created with terraform must be between 1 and 16."
+    condition = var.number_of_workers > 0 && var.number_of_workers <= 128
+    error_message = "The number of workers that can be created with terraform must be between 1 and 128."
   }
 }
 
@@ -111,6 +111,12 @@ variable "architecture" {
   }
 }
 
+variable "bonding_nic" {
+  description = "Select whether to use a network bonding interface in master and workers (true), or a single NIC (false)"
+  type = bool
+  default = "false"
+}
+
 #MAC ADDRESSES
 #The letters in the MACs should be in lowercase
 variable "provision_mac" {
@@ -134,13 +140,13 @@ variable "master_chucky_mac_base" {
 variable "worker_provision_mac_base" {
   description = "MAC address common part for the worker NICs in the provisioning network"
   type = string
-  default = "52:54:00:74:dc:d"
+  default = "52:54:00:74:dc:"
 }
 
 variable "worker_chucky_mac_base" {
   description = "MAC address common part for the worker NICs in the chucky network"
   type = string
-  default = "52:54:00:a9:6d:9"
+  default = "52:54:00:a9:6d:"
 }
 
 locals {
@@ -168,4 +174,10 @@ locals {
 
   #End of the provisioning networkk DHCP Range
   provisioning_dhcp_end = replace(var.provision_net_addr,".0/24",".100")
+
+  #OCP minor version
+  #Extract the minor version from the string 4.(minor).z with a regular expression regex(...).  This returns a list
+  #Get the single element from the list and return it as a string. one(...)
+  #Translate the minor version string to an integer in base 10. parseint(...)
+  ocp_minor_version = parseint(one(regex("4\\.([0-9]+)\\.",var.ocp_version)),10)
 }

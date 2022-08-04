@@ -28,7 +28,7 @@ host master{{ loop.index0 }} {
 
 {% for item in worker_names %}
 host worker{{ loop.index0 }} {
-  hardware ethernet {{ worker_chucky_mac_base }}{{ '%x' % loop.index0 }};
+  hardware ethernet {{ worker_chucky_mac_base }}{{ '%02x' % loop.index0 }};
   fixed-address {{ chucky_short_net }}.{{ 30 + loop.index0 }};
   option host-name "worker{{ loop.index0 }}.{{ cluster_name }}.{{ dns_zone }}";
 }

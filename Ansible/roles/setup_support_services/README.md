@@ -22,9 +22,9 @@ The following variables are used in this role.  A list of commented default valu
 
 * **master_names**.- List of master node names. Used to specify the nodes to be configure for DNS and DHCP
 
-* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  The letters in the MACs should be in lowercase.  Default value 52:54:00:9d:41:3c
+* **worker_provision_mac_base**.- MAC address for provision VM NIC in the routable (chucky) network.  The letters in the MACs should be in lowercase.  Default value 52:54:00:74:dc
 
-* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Default value 52:54:00:a9:6d:9
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Default value 52:54:00:a9:6d:
 
 * **worker_names**.- List of worker node names.  Used to specify the nodes to be configure for DNS and DHCP
 

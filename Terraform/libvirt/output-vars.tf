@@ -103,3 +103,13 @@ output "architecture" {
   value = var.architecture
   description = "Architecture style: redfish or VBMC"
 }
+
+output "bonding_nic" {
+  value = var.bonding_nic
+  description = "Select whether to use a network bonding interface in master and workers (true), or a single NIC (false)"
+}
+
+output "ocp_minor_version" {
+  value = local.ocp_minor_version
+  description = "OCP cluster minor version"
+}

@@ -1,8 +1,1 @@
 ---
-# defaults file for setup_support_services
-#chucky_net_addr: "192.168.30.0/24"
-#cluster_name: "ocp4"
-#dns_zone: "tale.net"
-#provision_mac: "52:54:00:9d:41:3c"
-#worker_chucky_mac_base: "52:54:00:a9:6d:9"
-#master_chucky_mac_base: "52:54:00:a9:6d:7"

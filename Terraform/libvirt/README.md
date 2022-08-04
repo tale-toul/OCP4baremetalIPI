@@ -38,27 +38,35 @@ All variables contain default values so it is not neccessary to modify them in o
 
 Most of the input variables used to configure the infrastructure are defined in the inpu-vars.tf file to simplify and organize the information, even if they are not used by terraform.  For example the variable **ocp_version** is not used by terraform however is defined here.  Most of the input variables are also defined as output variables so they can be used later by the ansible playbooks.
 
-The list of variables its purpose and default value are:
+The list of variables are:
 
-* **rhel8_image_location**.- Path and filename to the qcow2 image to be used as the base for the operating system in the support and provision VMs
+* **architecture**.- This variable defines whether a provisioning network will be used (architecture = vbmc) or not (architecture = redfish).  Only two values are accepted: **vbmc** and **redfish**.  Depending on the value used, different infrastructure components will be created to support the chosen architecture model.
 
-     Default value: rhel8.qcow2
+     Default value: vbmc
 
-* **provision_resources**.- Object variable with two fields: 
+* **bonding_nic**.- Select whether to use a network bonding interface in master and workers (true), or a single NIC (false)
 
-     memory.- The ammount of memory in MB to be assigned to the provision VM
+    Default value: false
 
-     vcpu.- The number of CPUS to be assigned to the provision VM
+* **chucky_net_addr**.- Network address for the routable network where all VMs are connected
 
-     Default values: memory = 24576    vcpu = 4
+     Default value: 192.168.30.0/24
 
-* **support_resources**.-  Object variable with two fields:
+*  **cluster_name**.- Used as the subdomain for the whole cluster DNS name.  For example for a cluster name of **ocp4** and a dns zone of **tale.net** the whole cluster domain is **ocp4.tale.net**
 
-     memory.- The ammount of memory in MB to be assigned to the support VM
+     Default value: ocp4
 
-     vcpu.- The number of CPUS to be assigned to the support VM
+* **dns_zone**.- DNS base zone for the Openshift cluster.  This is a private zone that is not resolvable outside the virtual networks or EC2 instance so any value can be used.
 
-     Default values: memory = 24576    vcpu = 4
+     Default value:  tale.net
+
+* **master_chucky_mac_base**.- MAC address common part for the master NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:70 to 52:54:00:a9:6d:7f.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:a9:6d:7
+
+* **master_provision_mac_base**.- MAC address common part for the master NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:74:dc:a0 to 52:54:00:74:dc:af.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:74:dc:a
 
 * **master_resources**.- Object variable with two fields:
 
@@ -68,6 +76,46 @@ The list of variables its purpose and default value are:
 
      Default values: memory = "16384"   vcpu = 4
 
+* **number_of_workers**.- How many worker nodes will be created by terraform.  The number must be between 1 and 128.
+
+     Default value: 3
+
+* **ocp_version**.- Openshift version to be deployed.  Available versions can be seen [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/) 
+
+     Default value: 4.9.5
+
+* **provision_net_addr**.- Network address for the provisioning network where cluster nodes and provisioning host are connected.
+
+     Default value: 192.168.14.0/24
+
+* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  This is used in the DHCP server to assign a known IP to the provision VM in the chucky network.  The letters in the MACs should be in lowercase.
+
+     Default value: 52:54:00:9d:41:3c
+
+* **provision_resources**.- Object variable with two fields: 
+
+     memory.- The ammount of memory in MB to be assigned to the provision VM
+
+     vcpu.- The number of CPUS to be assigned to the provision VM
+
+     Default values: memory = 24576    vcpu = 4
+
+* **rhel8_image_location**.- Path and filename to the qcow2 image to be used as the base for the operating system in the support and provision VMs
+
+     Default value: rhel8.qcow2
+
+* **support_net_config_nameserver**.- IP address for the external DNS server used by the support host.  This name server is initialy used to resolve host names so the support host can register and install packages.
+
+     Default value: 8.8.8.8
+
+* **support_resources**.-  Object variable with two fields:
+
+     memory.- The ammount of memory in MB to be assigned to the support VM
+
+     vcpu.- The number of CPUS to be assigned to the support VM
+
+     Default values: memory = 24576    vcpu = 4
+
 * **worker_resources**.- Object variable with two fields:
 
      memory.- The ammount of memory in MB to be assigned to the worker VMs
@@ -76,57 +124,13 @@ The list of variables its purpose and default value are:
 
      Default values: memory = "16384"   vcpu = 4
 
-* **number_of_workers**.- How many worker nodes will be created by terraform.  The number must be between 1 and 16.
+* **worker_provision_mac_base**.- MAC address common part for the worker NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 128 addresseses, from 52:54:00:74:dc:00 to  52:54:00:74:dc:80.  The letters in the MACs should be in lowercase.
 
-     Default value: 3
+     Default value: 52:54:00:74:dc:
 
-* **chucky_net_addr**.- Network address for the routable network where all VMs are connected
+* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:00  to 52:54:00:a9:6d:80.  The letters in the MACs should be in lowercase.
 
-     Default value: 192.168.30.0/24
-
-* **provision_net_addr**.- Network address for the provisioning network where cluster nodes and provisioning host are connected.
-
-     Default value: 192.168.14.0/24
-
-* **support_net_config_nameserver**.- IP address for the external DNS server used by the support host.  This name server is initialy used to resolve host names so the support host can register and install packages.
-
-     Default value: 8.8.8.8
-
-* **dns_zone**.- DNS base zone for the Openshift cluster.  This is a private zone that is not resolvable outside the virtual networks or EC2 instance so any value can be used.
-
-     Default value:  tale.net
-
-*  **cluster_name**.- Used as the subdomain for the whole cluster DNS name.  For example for a cluster name of **ocp4** and a dns zone of **tale.net** the whole cluster domain is **ocp4.tale.net**
-
-     Default value: ocp4
-
-* **ocp_version**.- Openshift version to be deployed.  Available versions can be seen [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/) 
-
-     Default value: 4.9.5
-
-* **provision_mac**.- MAC address for provision VM NIC in the routable (chucky) network.  This is used in the DHCP server to assign a known IP to the provision VM in the chucky network.  The letters in the MACs should be in lowercase.
-
-     Default value: 52:54:00:9d:41:3c
-
-* **master_provision_mac_base**.- MAC address common part for the master NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:74:dc:a0 to 52:54:00:74:dc:af.  The letters in the MACs should be in lowercase.
-
-     Default value: 52:54:00:74:dc:a
-
-* **master_chucky_mac_base**.- MAC address common part for the master NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:70 to 52:54:00:a9:6d:7f.  The letters in the MACs should be in lowercase.
-
-     Default value: 52:54:00:a9:6d:7
-
-* **worker_provision_mac_base**.- MAC address common part for the worker NICs in the provisioning network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:74:dc:d0 to  52:54:00:74:dc:df.  The letters in the MACs should be in lowercase.
-
-     Default value: 52:54:00:74:dc:d
-
-* **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  The last character for the MAC address will be assigned dynamically by terraform and ansible allowing the creation of up to 16 addresseses, from 52:54:00:a9:6d:90  to 52:54:00:a9:6d:9f.  The letters in the MACs should be in lowercase.
-
-     Default value: 52:54:00:a9:6d:9
-
-* **architecture**.- This variable defines whether a provisioning network will be used (architecture = vbmc) or not (architecture = redfish).  Only two values are accepted: **vbmc** and **redfish**.  Depending on the value used, different infrastructure components will be created to support the chosen architecture model.
-
-     Default value: vbmc
+     Default value: 52:54:00:a9:6d:
 
 ### Assigning values to input variables
 
@@ -308,14 +312,20 @@ The result from applying the variables is something like:
 
 ## Dynamic MAC address assignment
 
-The MAC addresses for worker nodes are dynamically created using a base and a loop variable in the terraform template file libvirt.tf
+The MAC addresses for worker nodes are dynamically created using a base MAC and a loop variable in the terraform template file libvirt.tf
 
-The _count_ variable gets its value from the input variable number_of_workers, which can take values from 0 to 16, then that value must be converted to an hexadecimal character 0 to f (in lower case), this is done with the [format terraform function](https://www.terraform.io/language/functions/format):
+In the case of the master nodes, the mac base variables (master_provision_mac_base; master_chucky_mac_base) have only the last hexadecimala character available to assign values to create the complete MAC addresses. For example **master_chucky_mac_base=52:54:00:a9:6d:7** which allows the creation of 16 different MACs from 52:54:00:a9:6d:70 to 52:54:00:a9:6d:7f, but since the number of master is always 3 there are plenty of addresses available, even if bonding is used the maximum number of MACs required is 3mastersx2MACs/per master= 6 MACs.
+
+In the case of worker nodes, the mac base variables (worker_provision_mac_base; worker_chucky_mac_base) use the last two hexadecimal characters to assign values to create the complete MAC address.  For example **worker_chucky_mac_base=52:54:00:a9:6d:"** which allows the creation of 256 different MACs from 52:54:00:a9:6d:00 to  52:54:00:a9:6d:ff.  In case bonding is used, every worker node requires two MACS, one per NIC for the bonding device, this limits the number of nodes to 256/2=128.
+
+The variable part of the MAC is taken from **count.index**, used by terraform to create the number of nodes requested by the user.  The _count_ variable gets its value from the input variable number_of_workers, which can take values from 0 to 128, then that value must be converted to an hexadecimal character 00 to 80 (in lower case), this is done with the [format terraform function](https://www.terraform.io/language/functions/format):
+
+The format string **%02x** means that the integer stored in **count.index** must be converted to an hexadeciman number in lower case (%x), and this number must take 2 places adding a leading 0 if only one character is enough to represent the number (02).
 
 ```
 network_interface {
   network_id = libvirt_network.chucky.id
-  mac        = format("${var.worker_chucky_mac_base}%x",count.index)
+  mac        = format("${var.worker_chucky_mac_base}%02x",count.index)
 }
 ```
 A similar formating trick is used in ansible, for the same purposes.
@@ -346,7 +356,34 @@ The logic to create the provision NIC uses a **dynamic** block with a for_each l
 ```
 The cloud init network configuration applied to the provision VM also changes depending on whether the provision network exists or not.  The details of this configuration are explained in section [Cloud init configuration](#cloud-init-configuration)
 
+## Bonding network interfaces
 
+Starting in OCP 4.10 it is possible to [define a particular network configuration](https://docs.openshift.com/container-platform/4.10/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#configuring-host-network-interfaces-in-the-install-config-yaml-file_ipi-install-installation-workflow) for master and worker nodes in the install-config.yaml file.  
+
+In this project a variable called **bonding_nic** can be used to set up a bonding network interface in all nodes.  The variable is of type boolean and defaults to **false** which means that no bonding NIC will be created, if the user defines the variable as **true** and the OCP version to deploy is 4.10 or above, terraform creates two network interfaces connected to the routable network for all nodes, and ansible adds a **networkConfig** section in the install-config.yaml file for all nodes.  If either the variable **bonding_nic** is false or the OCP version is older than 4.10 the second nic connected to the routable network will not be created and the install-config.yaml will not have a networkConfig section for any of the nodes.
+
+The installer will create a bonding interface **bond0** to connect the node to the routeable network.
+
+The individual network interfaces names are hardcoded to ens3 and ens4, which are the names assigned by the RHCOS 8, this may change in future versions of RHCOS.
+```
+        networkConfig:
+          interfaces:
+          - name: bond0
+            type: bond
+            state: up
+            ipv4:
+              dhcp: true
+              enabled: true
+            ipv6:
+              enabled: false
+            link-aggregation:
+              mode: active-backup
+              options:
+                miimon: '140'
+              port:
+              - ens4
+              - ens3
+```
 ## Troubleshooting
 
 ### Missing iptables chains

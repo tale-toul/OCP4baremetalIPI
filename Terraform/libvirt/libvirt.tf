@@ -149,14 +149,20 @@ resource "libvirt_domain" "master_domains" {
     mode = "host-passthrough"
   }
 
+#Main NIC connected to the provisioning network
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = "${var.master_chucky_mac_base}${count.index}"
   }
 
-  network_interface {
-    network_id = libvirt_network.chucky.id
-    mac        = format("52:54:00:49:6d:7%x",count.index)
+#The MAC address is shifted by 3 which is the number of masters
+#The second NIC is created only if requested by setting bonding_nic to true and the OCP version is 4.10+
+  dynamic "network_interface" {
+    for_each = var.bonding_nic == true && local.ocp_minor_version >= 10 ? [1] : []
+    content {
+      network_id = libvirt_network.chucky.id
+      mac        = format("${var.master_chucky_mac_base}%x",count.index + 3)
+    }
   }
 
   boot_device {
@@ -209,18 +215,23 @@ resource "libvirt_domain" "worker_domains" {
     for_each = toset(libvirt_network.provision[*].id)
     content {
       network_id = network_interface.key
-      mac        = format("${var.worker_provision_mac_base}%x",count.index)
+      mac        = format("${var.worker_provision_mac_base}%02x",count.index)
     }
   }
 
   network_interface {
     network_id = libvirt_network.chucky.id
-    mac        = format("${var.worker_chucky_mac_base}%x",count.index)
+    mac        = format("${var.worker_chucky_mac_base}%02x",count.index)
   }
 
-  network_interface {
-    network_id = libvirt_network.chucky.id
-    mac        = format("52:54:00:5b:6d:9%x",count.index)
+#The MAC address is shifted by the number of workers, which is contained in the number_of_workers variable
+#The second NIC is created only if requested by setting bonding_nic to true and the OCP version is 4.10+
+  dynamic "network_interface" {
+    for_each = var.bonding_nic == true && local.ocp_minor_version >= 10 ? [1] : []
+    content {
+      network_id = libvirt_network.chucky.id
+      mac        = format("${var.worker_chucky_mac_base}%02x",count.index + var.number_of_workers)
+    }
   }
 
   boot_device {

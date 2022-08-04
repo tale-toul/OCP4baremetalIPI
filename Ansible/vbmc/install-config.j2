@@ -33,6 +33,7 @@ platform:
           password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
         bootMACAddress: {{ master_provision_mac_base }}{{ loop.index0 }}
         hardwareProfile: libvirt
+{% if bonding_nic and (ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int  >= 10) %}
         networkConfig:
           interfaces:
           - name: bond0
@@ -50,6 +51,9 @@ platform:
               port:
               - ens4
               - ens5
+{% else %}
+#Version 4.{{ ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int }} not compatible with bonding interface for installation
+{% endif %}
 {% endfor %}
 {% for item in worker_names %}
       - name: {{ item }}
@@ -59,8 +63,9 @@ platform:
           disableCertificateVerification: True
           username: {{ managed_user }}
           password: {{ hostvars[baremetal_public_ip]['managed_password'] }}
-        bootMACAddress: {{ worker_provision_mac_base }}{{ '%x' % loop.index0 }}
+        bootMACAddress: {{ worker_provision_mac_base }}{{ '%02x' % loop.index0 }}
         hardwareProfile: libvirt
+{% if bonding_nic and (ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int  >= 10) %}
         networkConfig:
           interfaces:
           - name: bond0
@@ -78,6 +83,9 @@ platform:
               port:
               - ens4
               - ens5
+{% else %}
+#Version 4.{{ ocp_version | regex_search('4\\.([0-9]+)\\.','\\1')| list | first | int }} not compatible with bonding interface for installation
+{% endif %}
 {% endfor %}
 pullSecret: '{{ lookup('file', 'pull-secret') }}'
 sshKey: |
