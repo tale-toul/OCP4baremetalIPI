@@ -17,7 +17,7 @@ resource "aws_vpc" "vpc" {
     enable_dns_support = true
 
     tags = {
-        Name = "${var.vpc_name}-${local.suffix}"
+        Name = "vpc-${local.suffix}"
     }
 }
 
@@ -114,7 +114,7 @@ resource "aws_security_group" "sg-ssh-in" {
     }
 
     tags = {
-        Name = "sg-ssh"
+        Name = "sg-ssh-${local.suffix}"
     }
 }
 
@@ -138,7 +138,7 @@ resource "aws_security_group" "sg-web-in" {
     }
 
     tags = {
-        Name = "sg-web-in"
+        Name = "sg-web-in-${local.suffix}"
     }
 }
 
@@ -155,7 +155,7 @@ resource "aws_security_group" "sg-api-in" {
     }
 
     tags = {
-        Name = "sg-api-in"
+        Name = "sg-api-in-${local.suffix}"
     }
 }
 
@@ -173,7 +173,7 @@ resource "aws_security_group" "sg-vnc-in" {
     }
 
     tags = {
-        Name = "sg-vnc"
+        Name = "sg-vnc-${local.suffix}"
     }
 }
 
@@ -190,7 +190,7 @@ resource "aws_security_group" "sg-all-out" {
     }
 
     tags = {
-        Name = "all-out"
+        Name = "all-out-${local.suffix}"
     }
 }
 

@@ -5,12 +5,6 @@ variable "region_name" {
   default = "us-east-1"
 }
 
-variable "vpc_name" {
-  description = "Name assigned to the VPC"
-  type = string
-  default = "volatil"
-}
-
 variable "vpc_cidr" {
   description = "Network segment for the VPC"
   type = string
@@ -41,8 +35,14 @@ variable "ebs_disk_size" {
   default = 1000
 }
 
+variable "resources_id" {
+  description = "ID string to add add the end of AWS resource names so they can be more easily associated with a particular project"
+  type = string
+  default = ""
+}
+
 #LOCALS
 locals {
 #Fixed short random string
-suffix = "${random_string.strand.result}"
+suffix = var.resources_id == "" ? random_string.strand.result : var.resources_id
 }

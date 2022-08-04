@@ -46,6 +46,11 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default value: 1000
 
+* **resources_id**.- ID string to add add the end of AWS resource names so they can be more easily associated with a particular project.  If the value is empty (default) a random value will be generated and assigned to the suffix local variable.
+
+     Default = ""
+
+
 Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
 Apply the template to create the infrastructure with a command like:
