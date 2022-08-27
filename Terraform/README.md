@@ -30,7 +30,7 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default value: us-east-1
 
-* **ssh-keyfile**.- Name of the file with the public part of the SSH key to transfer to the EC2 instance.  This public ssh keyfile will be injected into the EC2 instance so the ec2-user can later connect via ssh using the corresponding private part.
+* **ssh-keyfile**.- Name of the file in the Terraform directory with the public part of the SSH key to transfer to the EC2 instance.  This public ssh keyfile will be injected into the EC2 instance so the ec2-user can later connect via ssh using the corresponding private part.
 
      Default value:  ssh.pub
 
@@ -53,11 +53,23 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
 Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
-Apply the template to create the infrastructure with a command like:
+Add any of the variable definitions described above to a file, for example ec2_metal.vars:
+```
+region_name="us-east-1"
+ssh-keyfile="baremetal-ssh.pub"
+instance_type="c5.metal"
+spot_instance=true
+```
+Create the resources with the following terraform command:
+```
+terraform apply -var-file ec2_metal.vars
+```
+
+Alternatively the variables can be defined in the command line: 
 ```
 $ terraform apply -var region_name=us-east-1 -var ssh-keyfile=baremetal-ssh.pub -var instance_type=c5.metal -var spot_instance=true
 ```
-If the terraform variables are used with non default values, keep a copy of the command so the same values are used to destroy the infrastructure:
+If the terraform variables are defined in the command line, keep a copy of the command so the same values are used to destroy the infrastructure.  This step is not required if a variables file was used:
 ```
 $ echo !! > terraform_apply.txt
 ```
@@ -69,7 +81,7 @@ baremetal_public_ip = "4.83.45.254"
 region_name = "us-east-1"
 vpc_cidr = "172.20.0.0/16"
 ```
-## Connecting to the EC2 instance
+## Connecting to the metal EC2 instance
 
 It may take a few minutes after creation for the EC2 instance to be ready and accept connections.
 

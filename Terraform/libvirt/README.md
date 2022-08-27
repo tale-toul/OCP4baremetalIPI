@@ -170,7 +170,7 @@ $ terraform apply -var-file monaco.vars
 
 * Add the RHEL 8 disk image 
 
-     Get the qcow2 image for RHEL 8 from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.5 KVM Guest Image.
+     Get the qcow2 image for RHEL 8, a valid subscription is required but trial subscription are available, from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.x KVM Guest Image.
 
      Keep in mind that the RHEL image is more than 700MB in size so a fast Internet connection is recommended.
 

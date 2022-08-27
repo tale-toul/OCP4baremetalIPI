@@ -1,7 +1,16 @@
 # Set up the baremetal and Libvirt instances with Ansible
 
 ## Subscribe hosts with Red Hat
-The EC2 metal host, the support and provisioning VMs all run on RHEL 8 and are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093)
+The EC2 metal host, the support and provisioning VMs all run on RHEL 8 and are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093):
+
+1. Go to the [Activation Keys](https://access.redhat.com/management/activation_keys) page
+1. Click on new to create an activation key
+1. Enter a name for the activation key, this will later be used to as a reference in Ansible.
+1. Define a Service Level, only for non free accounts
+1. Select whether to use Auto Attach or not.  Enable is a sensible default.
+1. Click create
+
+Once created the activacion key data is available at https://access.redhat.com/management/activation_keys.  Click on the activacion key just created and use the Name to populate the variable **subscription_activationkey** and the Organization ID to populate the variable **subscription_org_id**.
 
 The activation key data is stored in the file **Ansible/group_vars/all/subscription.data**.  The variables defined in this file are used by the ansible playbook.
 ```
@@ -11,6 +20,20 @@ subscription_org_id: 19704701
 It is recommended to encrypt this file with ansible-vault, for example to encrypt the file with the password stored in the file vault-id use a command like:
 ```
 $ ansible-vault encrypt --vault-id vault-id subscription.data
+```
+## Keep ssh connections alive
+
+Ansible connects to the managed hosts using ssh, then runs the tasks in the remote host.  It is possible that some tasks take a few minutes to complete, during which time the ssh connection is idle.  Depending on the ssh server configuration on the remote system, ssh connections may be discarded after a certain idle period, if this _timeout_ period is shorter than the time it takes the ansible task to complete, the result will be a failed or hung ansible playbook execution.  
+
+One such case can happen with the tasks that install rpm packages in the remote hosts.  
+
+To avoid this issue it should be possible to configure the ssh client in the same host where ansible is executed to send keepalive packets at regular interval to avoid the ssh server on the managed host to close the connection.  
+
+In most linux systems this can be done at the user or system level. To apply the configuration at user level add the **ServerAliveInterval** option to file ~/.ssh/config.  To apply the configuration at system level add the same optoin to file /etc/ssh/sshd_config:
+
+```
+Host *
+  ServerAliveInterval 60
 ```
 
 ## Add the common ssh key
@@ -35,6 +58,10 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 ```
 ## Running the playbook to configure the metal EC2 instance
 
+The inventory file is managed by the ansible playbook, there is no need to add any hostnames to it.
+
+The vault-id file is the one used earlier to encrypt the subscription data.
+
 Run the playbook with the following command:
 
 ```
@@ -42,6 +69,7 @@ $ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id
 ```
 
 ### Variables interface for setup_metal.yaml
+
 The list of variables used by the playbook are:
 
 * **baremetal_public_ip**.- Contains the public Internet facing IP address of the EC2 instance.  This variable is automatically assigned by terraform template **Terraform/main.tf** as an output variable
@@ -49,7 +77,7 @@ The list of variables used by the playbook are:
 
 * **update_OS**.- Whether to update the Operating system and reboot the host (true) or not (false).  Rebooting the EC2 instance is time consuming and may take between 10 and 20 minutes.  This variable is defined in the file **Ansible/group_vars/all/general.var**. 
 
-Default value: **false**
+     Default value: **false**
 
 ### Rebooting the host after OS update
 The playbook contains a task to update the Operating System, depending on what packages were updated, the kernel for example, the host may require a reboot.
@@ -318,11 +346,11 @@ The playbook **rev_proxy.yaml** can be used to install and set up the NGINX reve
 
 A specific variable is used in this playbook:
 
-* **ext_dns_zone**.- The external DNS domain for the Openshift cluster.  This is the public domain used to access the cluster through the reverse proxy and must be resolvable from the clientes connecting to the cluster.  
+* **ext_dns_zone**.- External DNS domain for the Openshift cluster.  This is the public domain used to access the cluster through the reverse proxy and must be resolvable by the clientes connecting to the cluster.  
 
      No default value is defined for this variable.
 
-Other variables are used in the playbook and the jinja2 template that generates the NGINX config file, but they are extracted from the terraform output variables:
+Other variables are used in the playbook and the jinja2 template used to generate the NGINX config file, but they are extracted from the terraform output variables:
 
 * **baremetal_public_ip**.- The public IP address of EC2 metal instance
 * **cluster_name**.- Cluster name that is part of the DNS domain. The complete cluster domain is **<cluster_name>.<ext_dns_zone>** for example (ocp4.redhat.com)

@@ -840,7 +840,7 @@ $ sudo firewall-cmd --list-all --zone public
 
 Add the same ports above to the security rule in the AWS instance
 
-Connect to libvirt daemon from the local host using virt-manager.  The command uses the public IP address of the EC2 instance and the _private_ part of the ssh key injected into the instance with terraform:
+Connect to libvirt daemon from the local host using virt-manager.  The command uses the public IP address of the EC2 instance and the _private_ part of the ssh key injected into the instance with terraform.  The ssh key file should be at ~/.ssh directory:
 ```
 $ virt-manager -c 'qemu+ssh://ec2-user@44.200.144.12/system?keyfile=ssh.key'
 ```
@@ -1468,11 +1468,9 @@ $ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
 
 ## External access to Openshift using NGINX
 
-The Openshift cluster resulting from applying the instructions in this document is only accessible from the physical and the provisioning hosts.  The reason is, despite being a public cluster, the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network which is not accessible from outside the physical host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the metal EC2 and the provisioning VM hosts.  The reason is, despite being a public cluster, the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network which is not accessible from outside the metal EC2 host.
 
-One possible solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.
-
-In this project a reverse proxy based on NGINX is used.
+One solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.  In this project a reverse proxy based on NGINX is used.
 
 The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes on port 443 and insecure application routes on port 80.
 
@@ -1487,13 +1485,15 @@ app1.example.com  │        │  app1.ocp4.company.dom │        │
 
 The one caveat about DNS zones translation is that the web console (https://console-openshift-console.apps.ocp4.tale.net) and the OAuth server (https://oauth-openshift.apps.ocp4.tale.net) can only be accessed using a single URL and DNS zone, so zone translation in the reverse proxy does not work for these two services.  
 
-The console and oauth URLs can be changed from their default values, but can only be accessed using the defined URL and the new DNS names must be resolvable from inside the cluster: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
+The console and oauth URLs can be changed from their default values, but can only be accessed using the configured URL, and the new DNS names must be resolvable from inside the cluster: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
 A local DNS server based on dnsmasq or adding the names to the locahost file could be used to resolve the console and oauth internal DNS names.
 
 The reverse proxy also supports the websocket protocol used in the web console to show some of the cluster information like the container logs.
 
 Additional details about the NGINX configuration can be found in the [nginx directory](nginx/)
+
+Manual an automatic instructions on how to install and set up NGINX are provided in the following sections.
 
 ### Install and set up NGINX
 The following commands must be run in the physical host.
@@ -1508,7 +1508,7 @@ Enable and start NGINX service
 $ sudo systemctl enable nginx --now
 $ sudo systemctl status nginx
 ```
-Create DNS entries for the API endpoint (__api.ocp4.redhat.com__) and the default ingress controller (__\*.apps.ocp4.redhat.com__) resolving to the public IP of the host where ngnix is listening.  Do this in the public DNS resolver for the hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
+Create DNS entries in the public DNS zone for the API endpoint (__api.ocp4.redhat.com__) and the default ingress controller (__\*.apps.ocp4.redhat.com__) resolving to the public IP of the host where ngnix is listening.  Do this in the public DNS resolver hosting the zone, for example route 53 in AWS, or using dnsmasq in your localhost.  
 
 ```
 $ host api.ocp4.redhat.com
@@ -1981,7 +1981,7 @@ notBefore=Jun 22 07:49:46 2022 GMT
 notAfter=Jun 23 07:31:30 2022 GMT
 ...
 ```
-This certificates are automatically renewed between 30% and 10% of there valid time remaining, but will require manual approval again, and on every subsequent renewals.
+This certificates are automatically renewed between 30% and 10% of their valid time remaining, but will require manual approval again, and on every subsequent renewals.
 
 Even if the worker nodes kubelet certificate requests are not approved, the installation will succeed, but several issues will happen during cluster normal operation, like not being able to connect to a node or pod with the following commands:
 ```
