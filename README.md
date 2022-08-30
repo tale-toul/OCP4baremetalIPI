@@ -61,7 +61,7 @@ This repository contains documentation and supporting files to deploy an Openshi
 
 These instructions are intended to deploy tests environments and help understand the baremetal IPI installation method, it is not recommended to deploy a production cluster using the method described here.  As an additional benefit using libvirt/KVM reduces the cost compared to deploying the same cluster using real baremetal servers.
 
-Even in the scenario depicted here, a powerfull physical server is required, given that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal instance in AWS.
+A powerful physical server is required, considering that it needs to host at least 6 VMs, each with its own requirements of memory, disk and CPU.  In case such server is not available, instructions are also provided to use a metal EC2 instance in AWS.
 
 The documentation contains instructions on how to deploy the cluster with and without a provisioning network in the sections [Provisioning Network Based Architecture](#provisioning-network-based-architecture) and [Redfish based architecture](#redfish-based-architecture) respectively.
 
@@ -704,7 +704,7 @@ $ ./openshift-baremetal-install create cluster --dir ocp4/
 
 ## Creating the infrastructure with terraform and ansible
 
-The infrasctucture required to deploy the Openshift cluster can be created with the terraform templates and ansible playbooks provided in this repository.
+The infrasctucture required to deploy the Openshift cluster can be created with the [terraform](https://www.terraform.io/downloads.html) templates and [ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) playbooks provided in this repository.
 
 There are several configuration options to adapt the resulting infrastructure to the particular requirements of the user.
 
@@ -752,8 +752,13 @@ Destroying the libvirt resources will also destroy the Openshift cluster if it w
 
 To destroy the AWS resources if they were created with terraform, go to the **Terraform** directory in the controlling host and run a command with the same options that were used to create them, but using the **destroy** subcommand:
 ```
-$ terraform destroy -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
+terraform destroy -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
 ```
+If a variables file was used:
+```
+terraform destroy -var-file yenda.vars
+```
+
 To destroy the AWS resources manually, go to the AWS web console and remove the EC2 instance, the internet gateway, routing table, elastic IP, etc.  Check the list of [created resources](Terraform#resources-created)
 
 Destroying the AWS resources will cause the destruction of the libvirt resources and Openshift cluster that may exist inside the EC2 instance.
@@ -1439,7 +1444,7 @@ bootMode: UEFI
 ```
 ### Automatic deployment of infrastructure with ansible and terraform
 
-It is possile to create the necessary infrastructure components using terraform templates and ansible playbooks, this simplifies and speeds up the installation process, and makes it less error prone.
+It is possile to create the necessary infrastructure components using [terraform](https://www.terraform.io/downloads.html) templates and [ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) playbooks, this simplifies and speeds up the installation process, and makes it less error prone.
 
 For these instructions to run successfully terraform and ansible must be installed and working in the controlling host.
 
@@ -1691,7 +1696,22 @@ spec:
 ```
 The reason for this is that no storage for the image registry has been configured.  Follow the instruction in the official documentation [Configuring the registry for bare metal ](https://docs.openshift.com/container-platform/4.9/registry/configuring_registry_storage/configuring-registry-storage-baremetal.html) to setup the image registry.
 
-In this example the storage will be provided by additional volumes added to the worker KVM VMs
+When the image registry operator is set to managed and a valid storage is added, some cluster operators will get updated, check their status to make sure they progress as expected
+```
+watch oc get co
+```
+
+In non production and test environments it is possible to use emptyDir as a storage option to have a working registry quicly, however this option is not persistent, if the registry pod is restarted all images stored in the registry are lost. 
+```
+provision $ oc edit configs.imageregistry/cluster
+spec:
+  managementState: Managed
+  ...
+  storage:
+    emptyDir: {}
+```
+
+In the following example the storage will be provided by additional volumes added to the worker KVM VMs
 
 ### Add Storage to the Worker Nodes
 An additional storage volume is created for each of the worker nodes.  The following commands are run in the physical host.

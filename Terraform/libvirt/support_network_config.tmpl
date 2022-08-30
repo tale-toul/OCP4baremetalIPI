@@ -3,8 +3,8 @@ config:
 - type: physical
   name: eth0
   subnets:
-  - address: ${address}
-    dns_nameservers: 
-    - ${nameserver}
-    gateway: ${gateway}
-    type: static
+    - type: static
+      address: ${address}
+      gateway: ${gateway}
+      dns_nameservers:
+        - ${nameserver}

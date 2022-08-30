@@ -281,6 +281,10 @@ resource "libvirt_domain" "support_domain" {
     volume_id = libvirt_volume.support_volume.id
   }
 
+  cpu {
+    mode = "host-passthrough"
+  }
+
   network_interface {
     network_id = libvirt_network.chucky.id
   }

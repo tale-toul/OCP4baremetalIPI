@@ -78,7 +78,6 @@
           - tmux
           - git
           - gcc
-          - libvirt-devel
           - ipmitool
           - httpd-tools
           - terraform

@@ -41,32 +41,6 @@
     - name: Reload inventory
       meta: refresh_inventory
 
-- name: Set up support VM
-  hosts: support
-  gather_facts: no
-  tasks:
-    - name: Load terraform output variables
-      include_vars:
-        dir: group_vars/all
-        extensions:
-          - 'data'
-          - 'var'
-        ignore_unknown_extensions: yes
-    - name: Wait for support VM connection to become available
-      wait_for_connection:
-        timeout: 300
-    - name: Assign a FQDN name to the support VM
-      hostname:
-          name: "support.{{ dns_zone }}"
-    - name: Subscribe support VM with Red Hat
-      redhat_subscription:
-        state: present
-        activationkey: "{{ subscription_activationkey }}"
-        org_id: "{{ subscription_org_id }}"
-    - name: Set up DNS and DHCP services
-      include_role:
-        name: setup_support_services
-
 #Set up virtual BMC or Red Fish
 - name: Set up VBMC or Red Fish
   hosts: baremetal
@@ -102,6 +76,32 @@
       loop: "{{ range(0, 3 + 2 + number_of_workers) | list }}"
       loop_control:
         index_var: x
+
+- name: Set up support VM
+  hosts: support
+  gather_facts: no
+  tasks:
+    - name: Load terraform output variables
+      include_vars:
+        dir: group_vars/all
+        extensions:
+          - 'data'
+          - 'var'
+        ignore_unknown_extensions: yes
+    - name: Wait for support VM connection to become available
+      wait_for_connection:
+        timeout: 300
+    - name: Assign a FQDN name to the support VM
+      hostname:
+          name: "support.{{ dns_zone }}"
+    - name: Subscribe support VM with Red Hat
+      redhat_subscription:
+        state: present
+        activationkey: "{{ subscription_activationkey }}"
+        org_id: "{{ subscription_org_id }}"
+    - name: Set up DNS and DHCP services
+      include_role:
+        name: setup_support_services
 
 #Set up provision VM
 - name: Set up provision VM

@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "3.65.0"
+      version = "4.28.0"
     }
   }
 }
@@ -227,7 +227,7 @@ data "aws_ami" "rhel8" {
 
   filter {
     name = "name"
-    values = ["RHEL*8.4*"]
+    values = ["RHEL*9.0*"]
   }
 }
 

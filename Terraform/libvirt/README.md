@@ -170,16 +170,16 @@ $ terraform apply -var-file monaco.vars
 
 * Add the RHEL 8 disk image 
 
-     Get the qcow2 image for RHEL 8, a valid subscription is required but trial subscription are available, from [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux 8 and download Red Hat Enterprise Linux 8.x KVM Guest Image.
+     Get the qcow2 image for RHEL 8. A valid subscription is required but trial subscription are available free of charge.  Go to [https://access.redhat.com/downloads/](https://access.redhat.com/downloads/), click on Red Hat Enterprise Linux, select version 8.6 and download Red Hat Enterprise Linux 8.6 KVM Guest Image.
+     
+     RHEL 9 is not yet supported as the OS in the provisioning host for a baremetal IPI install.
 
      Keep in mind that the RHEL image is more than 700MB in size so a fast Internet connection is recommended.
 
      Copy the image to **Terraform/libvirt/rhel8.qcow2**.  This is the default location and name that the terraform template uses to locate the file, if the file is in a different location or has a different name, update the variable **rhel8_image_location** by defining the variable in the command line.
 ```
-$ cp /home/user1/Downloads/rhel-8.5-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qcow2
+$ cp /home/user1/Downloads/rhel-baseos-8.6-x86_64-kvm.qcow2 Terraform/libvirt/rhel8.qcow2
 ```
-
-* If this is a fresh deployment, delete any previous **terraform.tfstate** file that may be laying around from previous attempts.
 
 * Use a command like the following to deploy the infrastructure.  
 ```

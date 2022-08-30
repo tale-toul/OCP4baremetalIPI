@@ -3,7 +3,7 @@
   pip:
     name:
       - sushy-tools
-      - libvirt-python
+      - cryptography
       - passlib
 - name: Create directory for sushy tools certificate
   file:

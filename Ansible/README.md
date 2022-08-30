@@ -1,7 +1,10 @@
 # Set up the baremetal and Libvirt instances with Ansible
 
 ## Subscribe hosts with Red Hat
-The EC2 metal host, the support and provisioning VMs all run on RHEL 8 and are subscribed with RH using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093):
+The EC2 metal host uses RHEL 9, the support and provisioning VMs use RHEL 8, all are subscribed with Red Hat using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093):
+
+RHEL 9.0 is used in the EC2 metal host because python pip version in RHEL 8.6 is too old to install sushy tools.
+RHEL 8.6 is used in the provision (and support) VMs because the openshift installer cannot create the bootstrap KVM VM with the version of qemu included in RHEL 9.
 
 1. Go to the [Activation Keys](https://access.redhat.com/management/activation_keys) page
 1. Click on new to create an activation key
@@ -123,7 +126,7 @@ A separate ansible playbook file (**support_setup.yaml**) is used to configure t
 
 This playbook has the following requirements:
 
-* An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  
+* An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  The activation key used to subscribe the EC2 is used if it is still available.
 * An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
 * A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) for the Openshift installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  
 * In case of redfish based architecture, the network port where sushy tools (redfish for libvirt) provides service in the metal instance is defined in the variable **sushy_tools_port**, it has a default value of 8080.
