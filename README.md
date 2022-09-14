@@ -720,7 +720,7 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 
 * Go back to the [Ansible directory](Ansible/README.md) and follow the instructions in sections [Set up KVM instances](Ansible#set-up-kvm-instances) and [Running the playbook for libvirt VMs](Ansible#running-the-playbook-for-libvirt-vms)
 
-* SSh into the provisioning node as the kni user. Make sure to [add the ssh key to the shell](Ansible#add-the-common-ssh-key). The connection can be stablish [using the EC2 instance as a jump host](Ansible#running-tasks-in-via-a-jumphost-with-ssh)
+* SSh into the provisioning node as the kni user. Make sure to [add the ssh key to the shell](Ansible#add-the-common-ssh-key). The connection can be stablish [using the EC2 instance as a jump host](Ansible#running-tasks-via-a-jumphost-with-ssh)
 
      The home directory of the kni user contains all necessary files to run the Openshift installation, and all the required infrastructure should be in place and ready.
 ```
