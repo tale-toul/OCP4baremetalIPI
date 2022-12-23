@@ -714,7 +714,7 @@ For these instructions to run successfully [terraform](https://www.terraform.io)
 
 * Go to the [Ansible directory](Ansible/README.md) and follow the instructions in the sections: [Subscribe hosts with Red Hat](Ansible/README.md#subscribe-hosts-with-red-hat), [Add the common ssh key](Ansible#add-the-common-ssh-key) and [Running the playbook to configure the metal EC2 instance](Ansible#running-the-playbook-to-configure-the-metal-ec2-instance)
 
-* (Optionall) Get more insights into the libvirt resources, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the ansible playbook so only the connection command needs to be run.
+* (Optionall) Get more insights into the libvirt resources, run [virt manager](https://virt-manager.org/) on the localhost as explained in [Connecting to the VMs with virt-manager](#connecting-to-the-VMs-with-virt-manager).  The configuration tasks have been executed by the **setup_metal** ansible playbook so only the connection command needs to be run.
 
 * Go to the [Terraform/libvirt directory](Terraform/libvirt/README.md) and follow the instructions to create the libvirt/KVM resources.
 

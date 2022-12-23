@@ -93,7 +93,7 @@
         name: ec2-user
         groups: libvirt
         append: yes
-    - name: Enable and start libvirt service
+    - name: Enable and start libvirtd service
       service:
         name: libvirtd
         state: started

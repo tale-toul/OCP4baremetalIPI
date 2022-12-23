@@ -1,7 +1,7 @@
 # Set up the baremetal and Libvirt instances with Ansible
 
 ## Subscribe hosts with Red Hat
-The EC2 metal host uses RHEL 9, the support and provisioning VMs use RHEL 8, all are subscribed with Red Hat using an activation key, for instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093):
+The EC2 metal host uses RHEL 9, the support and provisioning VMs use RHEL 8, all are subscribed with Red Hat using an activation key. For instructions on how to create the activation key check [Creating Red Hat Customer Portal Activation Keys](https://access.redhat.com/articles/1378093):
 
 RHEL 9.0 is used in the EC2 metal host because python pip version in RHEL 8.6 is too old to install sushy tools.
 RHEL 8.6 is used in the provision (and support) VMs because the openshift installer cannot create the bootstrap KVM VM with the version of qemu included in RHEL 9.
@@ -41,7 +41,7 @@ Host *
 
 ## Add the common ssh key
 
-Ansible needs access to the _private ssh key_ authorized to connect to the different hosts controlled by these playbooks.  Actually it is not the playbooks but the shell environment which has access to the ssh private key.
+Ansible needs access to the _private ssh key_ authorized to connect to the different hosts controlled by these playbooks.  It is actually the shell environment, not the playbooks, that need to have access to the ssh private key.
 
 To simplify things the same ssh key is authorized in all hosts being managed by the ansible playbooks in this respository.
 
@@ -61,13 +61,14 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 ```
 ## Running the playbook to configure the metal EC2 instance
 
-The inventory file is managed by the ansible playbook, there is no need to add any hostnames to it.
+The inventory file used by ansible is managed by the ansible playbook itself, so there is no need to add any hostnames to it.
 
 The vault-id file is the one used earlier to encrypt the subscription data.
 
 Run the playbook with the following command:
 
 ```
+$ cd Ansible
 $ ansible-playbook -i inventory -vvv setup_metal.yaml --vault-id vault-id
 ```
 
@@ -126,10 +127,9 @@ A separate ansible playbook file (**support_setup.yaml**) is used to configure t
 
 This playbook has the following requirements:
 
-* An [activation key](#subscribe-the-host-with-red-hat) is required to register the VMs with Red Hat.  The activation key used to subscribe the EC2 is used if it is still available.
-* An [ssh private key](#add-the-ec2-user-ssh-key) to connect to the VMs. This ssh key is the same used by the EC2 metal instance, the terraform template injects the same ssh key in all KVM VMs and EC2 instance.
-* A [pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) for the Openshift installation.  Download the pull secret and copy it to **Ansible/pull-secret**.  
-* In case of redfish based architecture, the network port where sushy tools (redfish for libvirt) provides service in the metal instance is defined in the variable **sushy_tools_port**, it has a default value of 8080.
+* An __activation key__ is required to register the VMs with Red Hat, same as with the [EC2 instance](#subscribe-hosts-with-red-hat).  The same activation key used to subscribe the AWS EC2 instance is used if it is still present in the **subscription.data** file.
+* The __ssh private key__ associated with the public key injected into the VMs. This ssh key is the [same one used earlier to connect to the EC2 metal instance](#add-the-common-ssh-key). Terraform injects the same ssh key in all KVM VMs and the EC2 instance.
+* A __pull secret__ for the Openshift installation.  [Download the pull secret](https://console.redhat.com/openshift/install/metal/user-provisioned) and copy it to **Ansible/pull-secret**.  
 
 ### Running the playbook for libvirt VMs
 
@@ -189,7 +189,8 @@ The list of variables used by the playbook are:
 
 * **support_host_ip**
 
-* **sushy_tools_port** 
+* **sushy_tools_port**.- In case of redfish based architecture, the network port where sushy tools (redfish for libvirt) provides its service in the metal instance.  
+     Default value: 8080.
 
 * **worker_chucky_mac_base**.- MAC address common part for the worker NICs in the chucky network.  Defined in **Terraform/libvirt**.  Default value 52:54:00:a9:6d:
  

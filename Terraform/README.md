@@ -2,7 +2,7 @@
 
 ## Create the AWS metal instance
 
-The terraform template in this directory creates an EC2 metal instance in AWS to be used as a base to deploy the libvirt/KVM resources required to deploy a baremetal OCP 4 cluster using baremetal IPI installation method
+The terraform template in this directory creates an EC2 metal instance in AWS to be used as the base to deploy the libvirt/KVM resources required to install the OCP 4 cluster using the baremetal IPI installation method.
 
 ## Module initialization
 
@@ -14,8 +14,9 @@ $ cd libvirt
 $ terraform init
 
 Initializing the backend...
+...
 ```
-Terraform needs access to credentials for an AWS user with privileges to create resources, these can be defined in a file containing the access key ID and the access key secret with the following format. Put this file in ~/.aws/credentials:
+Terraform needs access to credentials for an AWS user with privileges to create resources, these can be defined in a file containing the access key ID and the access key secret with the following format. Put this file in __~/.aws/credentials__:
 ```
 [default]
 aws_access_key_id=xxxx
@@ -24,7 +25,7 @@ aws_secret_access_key=xxxx
 
 ## Applying the terraform template
 
-Some variables are defined in the **Terraform/input-vars.tf** that can be used to modify some configuration parameters.  The most relevan of these are:
+The following variables are defined in the **Terraform/input-vars.tf** file and can be used to modify the configuration:
 
 * **region_name**.- AWS Region where the EC2 instance and other resources are created.  Keep in mind that the same infrastructure may incur different costs depending on the region.
 
@@ -38,22 +39,22 @@ Some variables are defined in the **Terraform/input-vars.tf** that can be used t
 
      Default value: c5n.metal
 
-* **spot_instance**.- Determines if the AWS EC2 metal instance created is an spot instance (true) or not (false). Using a spot instance reduces cost but is __not guaranteed__ to be available at creation time or for long periods once created.
+* **spot_instance**.- Determines if the AWS EC2 metal instance created is a spot instance (true) or not (false). Using a spot instance reduces cost but is __not guaranteed__ to be available at creation time or for long periods once created.
 
      Default = false
 
-* **ebs_disk_size**.- Size, in Megabytes, of the additional EBS disk attached to the metal instance. This disk is used to store the libvirt/KVM Virtual Machine disks.
+* **ebs_disk_size**.- Size in Megabytes for the additional EBS disk attached to the metal instance. This disk is used to store the libvirt/KVM Virtual Machine disks.
 
      Default value: 1000
 
-* **resources_id**.- ID string to add add the end of AWS resource names so they can be more easily associated with a particular project.  If the value is empty (default) a random value will be generated and assigned to the suffix local variable.
+* **resources_id**.- ID string to add at the end of AWS resource names so they can be more easily associated with a particular project.  If the value is empty (default) a random value will be generated and assigned to the suffix local variable.
 
      Default = ""
 
 
-Copy a public ssh key file in the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
+Copy a public ssh key file to the Terraform directory, the default expected name for the file is **ssh.pub**, if a different name is used, the variable **ssh-keyfile** must be updated accordingly.  
 
-Add any of the variable definitions described above to a file, for example ec2_metal.vars:
+Add any of the variable definitions described above to a file, for example **ec2_metal.vars**:
 ```
 region_name="us-east-1"
 ssh-keyfile="baremetal-ssh.pub"
@@ -69,7 +70,7 @@ Alternatively the variables can be defined in the command line:
 ```
 $ terraform apply -var region_name=us-east-1 -var ssh-keyfile=baremetal-ssh.pub -var instance_type=c5.metal -var spot_instance=true
 ```
-If the terraform variables are defined in the command line, keep a copy of the command so the same values are used to destroy the infrastructure.  This step is not required if a variables file was used:
+If the terraform variables are defined in the command line, keep a copy of the command so the same exact values can used to destroy the infrastructure.  This step is not required if a variables file was used:
 ```
 $ echo !! > terraform_apply.txt
 ```
@@ -83,11 +84,9 @@ vpc_cidr = "172.20.0.0/16"
 ```
 ## Connecting to the metal EC2 instance
 
-It may take a few minutes after creation for the EC2 instance to be ready and accept connections.
+It may take a few minutes after creation, for the EC2 instance to be ready and accept connections.
 
-Ssh is used to connect to the EC2 instance created by terraform.  
-
-The elements required are:
+Ssh is used to connect to the EC2 instance created by terraform.  The elements required to connect are:
 * The private part of the ssh key injected earlier 
 * The user to connect is **ec2-user**
 * The public IP returned by terraform output, can also be obtained with the command
@@ -114,9 +113,13 @@ The elements created are:
 
 ## Destroying the resources
 
-When the resources are not required anymore they can be easily removed using terraform, just run a command similar to the one used to create them using the subcommand **destroy**.  
+When the resources are not required anymore they can be easily removed using terraform, just run a command similar to the one used to create them but using the **destroy** subcommand instead.
 
 Destroying the AWS resources will also remove any Openshift or libvirt resources created in the EC2 instance.
+```
+terraform destroy -var-file ec2_metal.vars
+```
+Or if the variables were defined in the command line:
 ```
 $ terraform destroy -var="region_name=us-east-1" -var="ssh-keyfile=baremetal-ssh.pub" -var="instance_type=c5.metal"
 ```

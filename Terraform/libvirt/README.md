@@ -12,31 +12,15 @@ $ cd libvirt
 $ terraform init
 
 Initializing the backend...
-
-Initializing provider plugins...
-- terraform.io/builtin/terraform is built in to Terraform
-- Reusing previous version of dmacvicar/libvirt from the dependency lock file
-- Reusing previous version of hashicorp/template from the dependency lock file
-- Using previously-installed dmacvicar/libvirt v0.6.14
-- Using previously-installed hashicorp/template v2.2.0
-
-Terraform has been successfully initialized!
-
-You may now begin working with Terraform. Try running "terraform plan" to see
-any changes that are required for your infrastructure. All Terraform commands
-should now work.
-
-If you ever set or change modules or backend configuration for Terraform,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
+...
 ```
 ## Input variables
 
 Many aspects of the infrastructure created by terraform can be modified by assigning different values to the variables defined in the file **input-vars.tf**
 
-All variables contain default values so it is not neccessary to modify them in order to create a funtioning infrastructure. 
+All variables have default values so it is not neccessary to modify them in order to create a functioning infrastructure. 
 
-Most of the input variables used to configure the infrastructure are defined in the inpu-vars.tf file to simplify and organize the information, even if they are not used by terraform.  For example the variable **ocp_version** is not used by terraform however is defined here.  Most of the input variables are also defined as output variables so they can be used later by the ansible playbooks.
+Most of the input variables used to configure the infrastructure are defined in the input-vars.tf file to simplify and organize the information, even if they are not used by terraform.  For example the variable **ocp_version** is not used by terraform however is defined here.  Most of the input variables are also defined as output variables so they can be used later by the ansible playbooks.
 
 The list of variables are:
 
@@ -214,7 +198,7 @@ The RHEL 8 base image is capable of running cloud init on first boot to configur
 
 Some template files containing the cloud init configuration are used.  Variables can be used to define values at rendering time.  These variables must be defined at the template file data definition block in terraform.
 
-Ssh key authentication is the only method enable for the root user authentication, no passwords are assigned so console access is blocked. 
+Ssh key authentication is the only method enabled for the root user authentication, no passwords are assigned, so console access is blocked. 
 
 The support VM cloud init configuration assigns an static IP at initial configuration so this VM can be accessed via ssh immediately after creation, but the provisioning VM only gets an IP in the routable network when the DHCP service in the support VM is working, so the provisioning VM is not accessible just after creation.
 
@@ -253,7 +237,7 @@ config:
 ```
 The network configuration [template](https://www.terraform.io/language/functions/templatefile) for the provision VM uses [terraform conditional statements](https://www.terraform.io/language/expressions/strings#directives) so the rendered configuration is adapted depending on whether a provisioning network is required or not.
 
-If the variable **architecture=vbmc** the provisioning network is used so two network interfaces are configured.  If the variable has any other value, actually the variable has a validation statement that only allows it to get the values **vbmc** and **redfish**, then only one network interface will be configured in the routable network using DHCP:
+If the variable **architecture** equals **vbmc** the provisioning network is used so two network interfaces are configured.  If the variable has any other value, actually the variable has a validation statement that only allows it to get the values **vbmc** and **redfish**, then only one network interface will be configured in the routable network using DHCP:
 
 ```
 version: 1
