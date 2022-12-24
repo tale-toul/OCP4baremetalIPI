@@ -22,6 +22,7 @@ subscription_org_id: 19704701
 ```
 It is recommended to encrypt this file with ansible-vault, for example to encrypt the file with the password stored in the file vault-id use a command like:
 ```
+$ echo "sup3rs3cr3t" > vault-id
 $ ansible-vault encrypt --vault-id vault-id subscription.data
 ```
 ## Keep ssh connections alive
@@ -41,7 +42,7 @@ Host *
 
 ## Add the common ssh key
 
-Ansible needs access to the _private ssh key_ authorized to connect to the different hosts controlled by these playbooks.  It is actually the shell environment, not the playbooks, that need to have access to the ssh private key.
+Ansible needs access to the _private ssh key_ authorized to connect to the different hosts controlled by these playbooks.  It is actually the shell environment, not the playbooks, that needs to have access to the ssh private key.
 
 To simplify things the same ssh key is authorized in all hosts being managed by the ansible playbooks in this respository.
 
@@ -63,7 +64,7 @@ ssh-rsa AAAAB3NzaC1...jBI0mJf/kTbahNNmytsPOqotr8XR+VQ== jjerezro@jjerezro.remote
 
 The inventory file used by ansible is managed by the ansible playbook itself, so there is no need to add any hostnames to it.
 
-The vault-id file is the one used earlier to encrypt the subscription data.
+The vault-id file is the one used [earlier](#subscribe-hosts-with-red-hat) to encrypt the subscription data.
 
 Run the playbook with the following command:
 

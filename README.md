@@ -830,13 +830,15 @@ $ oc -n openshift-machine-api get bmh
 
 These instructions can be applied when the physical host is an AWS metal instance, for other cases, adapt accordingly.
 
-Add the ec2-user to the libvirt group:
+In the AWS metal instance:
+
+* Add the ec2-user to the libvirt group:
 ```
 $ sudo usermod -a -G libvirt ec2-user
 $ virsh -c qemu:///system list
 ```
 
-Add firewall rules in the physical host to connect to the VNC ports. Better to use a range of ports
+* Add firewall rules in the physical host to connect to the VNC ports. Better to use a range of ports
 ```
 $ sudo firewall-cmd --add-port 5900-5910/tcp --zone=public  --permanent
 $ sudo firewall-cmd --reload

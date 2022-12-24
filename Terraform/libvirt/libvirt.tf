@@ -16,7 +16,7 @@ data "terraform_remote_state" "ec2_instance" {
 }
 
 provider "libvirt" {
-  uri = "qemu+ssh://ec2-user@${data.terraform_remote_state.ec2_instance.outputs.baremetal_public_ip}/system?keyfile=../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}"
+  uri = "qemu+ssh://ec2-user@${data.terraform_remote_state.ec2_instance.outputs.baremetal_public_ip}/system?keyfile=../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}&known_hosts_verify=ignore"
 }
 
 #Networks

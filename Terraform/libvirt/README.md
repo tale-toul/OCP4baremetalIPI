@@ -344,9 +344,9 @@ The cloud init network configuration applied to the provision VM also changes de
 
 Starting in OCP 4.10 it is possible to [define a particular network configuration](https://docs.openshift.com/container-platform/4.10/installing/installing_bare_metal_ipi/ipi-install-installation-workflow.html#configuring-host-network-interfaces-in-the-install-config-yaml-file_ipi-install-installation-workflow) for master and worker nodes in the install-config.yaml file.  
 
-In this project a variable called **bonding_nic** can be used to set up a bonding network interface in all nodes.  The variable is of type boolean and defaults to **false** which means that no bonding NIC will be created, if the user defines the variable as **true** and the OCP version to deploy is 4.10 or above, terraform creates two network interfaces connected to the routable network for all nodes, and ansible adds a **networkConfig** section in the install-config.yaml file for all nodes.  If either the variable **bonding_nic** is false or the OCP version is older than 4.10 the second nic connected to the routable network will not be created and the install-config.yaml will not have a networkConfig section for any of the nodes.
+In this project a variable called **bonding_nic** can be used to set up a bonding network interface in all nodes.  The variable is of type boolean and defaults to **false** which means that no bonding NIC will be created. If the user defines the variable as **true** and the OCP version to deploy is 4.10 or above, terraform creates two network interfaces connected to the routable network for all nodes, and ansible adds a **networkConfig** section in the install-config.yaml file for all nodes.  If either the variable **bonding_nic** is false or the OCP version is older than 4.10 the second nic connected to the routable network is not be created and the install-config.yaml does not have a networkConfig section for any of the nodes.
 
-The installer will create a bonding interface **bond0** to connect the node to the routeable network.
+The installer creates a bonding interface **bond0** to connect the node to the routeable network.
 
 The individual network interfaces names are hardcoded to ens3 and ens4, which are the names assigned by the RHCOS 8, this may change in future versions of RHCOS.
 ```
@@ -441,4 +441,23 @@ Chain LIBVIRT_OUT (1 references)
 ...
 ```
 
+## Connecting to the libvirt daemon
 
+Terraform connects to the remote libvirtd daemon to create, destroy and apply changes to the virtual resources. The configuration required to stablish the connection is described in [Connecting to the VMs with virt-manager](/README.md#connecting-to-the-vms-with-virt-manager).  The configuration tasks are executed by the setup_metal ansible playbook, only the connection command needs to be added to the provider definition:
+```
+provider "libvirt" {
+  uri = "qemu+ssh://ec2-user@${data.terraform_remote_state.ec2_instance.outputs.baremetal_public_ip}/system?keyfile=../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}&known_hosts_verify=ignore"
+}
+```
+This command is based on and ssh connection:
+* The user to connect as, is **ec2-user**
+* The IP to connect to, is the public IP of the AWS metal instance, obtained from the state of the previous terraform template that creates said metal instance.
+* The **keyfile** parameter contains the private part of the ssh key injected in the AWS metal instance by the terraform template that creates the metal instance.  In this case the keyfile uses a relative path `../ssh.pub`
+* The option `known_hosts_verify=ignore` is used to allow the connection even if this is the first time ssh connection to the host and there is no corresponding entry in the known_hosts configuration file for the public IP of the AWS metal instance.  If this option is not used and there is no entry in the known_hosts file for the AWS metal instance, the following error is shown and the connection is not stablished:
+```
+Error: failed to dial libvirt: ssh: handshake failed: knownhosts: key mismatch 
+```
+The connection URL, once the variables have been replaced with actual values looks like:
+```
+qemu+ssh://ec2-user@3.222.70.79/system?keyfile=../ssh.pub&known_hosts_verify=ignore
+```
