@@ -118,6 +118,9 @@
     - name: Wait for provision VM connection to become available
       wait_for_connection:
         timeout: 300
+    - name: Assign a FQDN name to the provision VM
+      hostname:
+          name: "provision.{{ dns_zone }}"
     - name: Subscribe provision VM with Red Hat
       redhat_subscription:
         state: present
@@ -139,6 +142,7 @@
           - jq
           - ipmitool
           - terraform
+          - tmux
           - nmstate
         state: present
     - name: Add the user kni

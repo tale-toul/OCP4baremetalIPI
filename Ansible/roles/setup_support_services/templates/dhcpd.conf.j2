@@ -12,12 +12,6 @@ subnet {{ chucky_short_net }}.0 netmask 255.255.255.0 {
   option subnet-mask 255.255.255.0;
 }
 
-host provision {
-  hardware ethernet {{ provision_mac }};
-  fixed-address {{ chucky_short_net }}.10;
-  option host-name "provision.{{ dns_zone }}";
-}
-
 {% for item in master_names  %}
 host master{{ loop.index0 }} {
   hardware ethernet {{ master_chucky_mac_base }}{{ loop.index0 }};

@@ -765,6 +765,23 @@ Destroying the AWS resources will cause the destruction of the libvirt resources
 
 ## Troubleshooting the installation
 
+To obtain the IP of any of the VMs you can run the following command in the AWS metal instance. In the example, the provision VM's IP is obtained:
+```
+$ virsh -c qemu:///system domifaddr provision --source arp
+ Name       MAC address          Protocol     Address
+-------------------------------------------------------------------------------
+ vnet16     52:54:00:9d:41:3c    ipv4         192.168.30.10/0
+```
+For the provision and support VMs, you can get the IP from the terraform output:
+```
+$ cd Terraform/libvirt
+$ terraform output provision_host_ip
+"192.168.30.10"
+$ terraform output support_host_ip
+"192.168.30.3"
+```
+If you need the IP for the provision or support VMs before they are running or even created, check the value in the file **Terraform/libvirt/input-vars.tf**
+
 Check the installation log in the provisioning host as the kni user:
 ```
 $ tail -f ocp4/.openshift_install.log

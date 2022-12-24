@@ -15,7 +15,11 @@ config:
     - type: static
       address: ${ironiq_addr}
 %{~ else }
-    - type: dhcp
+    - type: static
+      address: ${provision_host_ip}
+      gateway: ${gateway}
+      dns_nameservers:
+        - ${nameserver}
 %{ endif }
 %{~ if architecture == "vbmc"}
 - type: physical
@@ -25,5 +29,9 @@ config:
   bridge_interfaces:
     - eth1
   subnets:
-    - type: dhcp
+    - type: static
+      address: ${provision_host_ip}
+      gateway: ${gateway}
+      dns_nameservers:
+        - ${nameserver}
 %{~ endif ~}

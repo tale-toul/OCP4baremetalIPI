@@ -63,7 +63,7 @@ resource "libvirt_volume" "provision_volume" {
 resource "libvirt_cloudinit_disk" "provision_cloudinit" {
   name = "provision.iso"
   user_data = templatefile("${path.module}/provision_cloud_init.tmpl", { auth_key = file("${path.module}/../${data.terraform_remote_state.ec2_instance.outputs.ssh_certificate}") })
-  network_config = templatefile("${path.module}/provision_network_config.tmpl", { ironiq_addr = local.provision_ironiq_addr, architecture = var.architecture  })
+  network_config = templatefile("${path.module}/provision_network_config.tmpl", { ironiq_addr = local.provision_ironiq_addr, architecture = var.architecture, provision_host_ip = "${local.provision_host_ip}/24", gateway = local.chucky_gateway, nameserver = local.support_host_ip })
 }
 
 #Provisioning VM

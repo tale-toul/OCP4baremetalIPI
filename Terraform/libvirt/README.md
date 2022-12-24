@@ -200,7 +200,7 @@ Some template files containing the cloud init configuration are used.  Variables
 
 Ssh key authentication is the only method enabled for the root user authentication, no passwords are assigned, so console access is blocked. 
 
-The support VM cloud init configuration assigns an static IP at initial configuration so this VM can be accessed via ssh immediately after creation, but the provisioning VM only gets an IP in the routable network when the DHCP service in the support VM is working, so the provisioning VM is not accessible just after creation.
+The support and provision VMs cloud init configuration assigns static IPs at initial configuration so these VMs can be accessed via ssh immediately after creation.
 
 The ssh key injected in the VM is the same one used in the EC2 instance 
 
@@ -237,7 +237,7 @@ config:
 ```
 The network configuration [template](https://www.terraform.io/language/functions/templatefile) for the provision VM uses [terraform conditional statements](https://www.terraform.io/language/expressions/strings#directives) so the rendered configuration is adapted depending on whether a provisioning network is required or not.
 
-If the variable **architecture** equals **vbmc** the provisioning network is used so two network interfaces are configured.  If the variable has any other value, actually the variable has a validation statement that only allows it to get the values **vbmc** and **redfish**, then only one network interface will be configured in the routable network using DHCP:
+If the variable **architecture** equals **vbmc** the provisioning and routable (chucky) networks are used, in this case two network interfaces are configured, each one connected to one of the networks: eth0 and eth1.  If the variable has any other value, actually the variable has a validation statement that only allows it to get the values **vbmc** and **redfish**, then only one network interface will be configured in the routable network: eth0:
 
 ```
 version: 1
@@ -257,7 +257,11 @@ config:
     - type: static
       address: ${ironiq_addr}
 %{~ else }
-    - type: dhcp
+    - type: static
+      address: ${provision_host_ip}
+      gateway: ${gateway}
+      dns_nameservers:
+        - ${nameserver}
 %{ endif }
 %{~ if architecture == "vbmc"}
 - type: physical
@@ -267,8 +271,44 @@ config:
   bridge_interfaces:
     - eth1
   subnets:
-    - type: dhcp
+    - type: static
+      address: ${provision_host_ip}
+      gateway: ${gateway}
+      dns_nameservers:
+        - ${nameserver}
 %{~ endif ~}
+```
+The configuration that results from applying the template can be seen running the _plan_ terraform subcommand.  In this example **architecture=vbmc**:
+```
+$ terraform plan|less -R
+  # libvirt_cloudinit_disk.provision_cloudinit will be created
+...
++ network_config = <<-EOT
+      version: 1
+      config:
+      - type: physical
+        name: eth0
+      - type: bridge
+        name: provision
+        bridge_interfaces:
+          - eth0
+        subnets:
+          - type: static
+            address: 192.168.14.14/24
+      - type: physical
+        name: eth1
+      - type: bridge
+        name: chucky
+        bridge_interfaces:
+          - eth1
+        subnets:
+          - type: static
+            address: 192.168.30.10/24
+            gateway: 192.168.30.1
+            dns_nameservers:
+              - 192.168.30.3
+  EOT
+...
 ```
 
 ## Dependencies 
