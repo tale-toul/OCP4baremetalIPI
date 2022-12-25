@@ -1,13 +1,13 @@
 [baremetal]
 # BEGIN ANSIBLE MANAGED BLOCK
-23.20.178.15
+3.232.173.107
 # END ANSIBLE MANAGED BLOCK
 [support]
 # BEGIN Ansible block for support and provision
-192.168.55.3
+192.168.30.3
 
 [provision]
-192.168.55.10
+192.168.30.10
 # END Ansible block for support and provision
 
 [kvm:children]
@@ -16,6 +16,6 @@ provision
 
 [kvm:vars]
 # BEGIN Ansible block for support variables
-ansible_ssh_common_args='-o ProxyJump="ec2-user@23.20.178.15"' 
+ansible_ssh_common_args='-o ProxyJump="ec2-user@3.232.173.107"' 
 # END Ansible block for support variables
 ansible_user=root

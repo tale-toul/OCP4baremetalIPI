@@ -107,9 +107,11 @@ The elements created are:
 * An Internet gateway to provide access to and from the Intetnet to the EC2 instance created in the public zone
 * A routing table that links the public subnet to the Internet Gateway
 * An elastic IP for the EC2 instance 
-* A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5010(vnc), 6443(OCP API)
+* A list of security groups to allow access to the following ports 22(ssh), 80(http), 443(https), 5900-5910(vnc), 6443(OCP API)
 * A security group to allow outbound connections from the EC2 instance and hence any VM to any port in the outside world
 * An EC2 instance of type c5n.metal, powerfull enough to run the KVM VMs
+
+![AWS resources for the metal base infrastructure](images/metalAWS.png "AWS resources for the metal base infrastructure")
 
 ## Destroying the resources
 

@@ -42,6 +42,7 @@
   * [Install the Openshift-cluster with redfish](#install-the-openshift-cluster-with-redfish) 
   * [Set up UEFI boot mode](#set-up-uefi-boot-mode)
   * [Automatic deployment of infrastructure with ansible and terraform](#automatic-deployment-of-infrastructure-with-ansible-and-terraform)
+  * [Destroying the infrastructure in redfish based architecture](#destroying-the-infrastructure-in-redfish-based-architecture)
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
   * [Install and set up NGINX with Ansible](#install-and-set-up-nginx-with-ansible)
@@ -1489,6 +1490,10 @@ $ ssh -J ec2-user@3.219.143.250  kni@192.168.30.10
 * Copy the install-config.yaml file into the directory with the name of the cluster
 
 * Run the [Openshift installer](#install-the-openshift-cluster-with-bmc)
+
+### Destroying the infrastructure in redfish based architecture
+
+The instructions to destroy the cluster and the accompanying infrastructure are the same used in the [provisioning network design](#destroying-the-infrastructure-in-provisioning-network-design).
 
 ## External access to Openshift using NGINX
 
