@@ -2,7 +2,9 @@
 
 ## Create the AWS metal instance
 
-The terraform template in this directory creates an EC2 metal instance in AWS to be used as the base to deploy the libvirt/KVM resources required to install the OCP 4 cluster using the baremetal IPI installation method.
+The terraform template in this directory creates an EC2 metal instance in AWS as the base to deploy the libvirt/KVM resources required to install the OCP 4 cluster using the baremetal IPI installation method.
+
+The AWS resources are created using the [aws terraform provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 
 ## Module initialization
 
@@ -10,12 +12,28 @@ Before running terraform for the first time, the modules used by the template mu
 
 Run the following command in the directory where the terraform templates reside.  The command can be safely run many times, it will not trampled previous executions:
 ```
-$ cd libvirt
+$ cd Terraform
 $ terraform init
 
 Initializing the backend...
 ...
 ```
+To update the version of the terraform modules, to version 4.60.0 in the example below, update the version reference in the main.tf file:
+```
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "4.60.0"
+    }
+  }
+}
+```
+And run the initialitation command with the **-upgrade** option:
+```
+$ terraform init -upgrade
+```
+
 Terraform needs access to credentials for an AWS user with privileges to create resources, these can be defined in a file containing the access key ID and the access key secret with the following format. Put this file in __~/.aws/credentials__:
 ```
 [default]
@@ -135,7 +153,7 @@ In the following example the latest AMI matching the filters will be used.  The 
 The AMIS are region dependent, but the region is not specified because it is defined in the aws provider section, at the begginning of the terraform template.
 
 ```
-data "aws_ami" "rhel8" {
+data "aws_ami" "rhel" {
   most_recent = true
   owners = ["309956199498"]
   filter {
@@ -148,7 +166,7 @@ data "aws_ami" "rhel8" {
   }
   filter {
     name = "name"
-    values = ["RHEL*8.5*"]
+    values = ["RHEL*9.0*"]
   }
 }
 ```

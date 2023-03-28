@@ -807,7 +807,7 @@ Connect to the bootstrap node using the core user, the ssh certificate that was 
 # ssh -i .ssh/bmipi core@192.168.30.80
 ```
 
-Check the pods running in the bootstrap V
+Check the pods running in the bootstrap VM
 ```
 # sudo podman ps
 ```
@@ -1968,6 +1968,10 @@ The ansible playbook **support_setup.yaml**, in particular the template install-
 ```
 
 There is no need to apply the instructions in article [Preventing DHCP from assigning an IP address on node reboot](https://access.redhat.com/articles/6865841).
+
+### Node certificates manual approval
+
+**This bug has been fixed in latest versions of 4.11.z and in 4.12**
 
 During the installation, the kubelet certificate requests for the worker nodes are not automatically approved by the machine approver operator and must be approved manually.  This is a bug and should not happen.  
 

@@ -2,6 +2,8 @@
 
 This directory contains the terraform templates and support files required to deploy the KVM/libvirt based infrastructure components required to deploy the baremetal IPI OCP cluster.
 
+The libvirt resources are created using the [libvirt terraform provider](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs)
+
 ## Module initialization
 
 Before running terraform for the first time, the modules used by the template must be downloaded and initialized, this requires an active Internet connection.  
@@ -14,6 +16,24 @@ $ terraform init
 Initializing the backend...
 ...
 ```
+To update the version of the terraform modules, to version 0.7.1 in the example below, update the version reference in the libvirt.tf file:
+```
+terraform {
+  required_providers {
+    libvirt = {
+      source = "dmacvicar/libvirt"
+      version = "0.7.1"
+    }
+  }
+}
+
+```
+And run the initialitation command with the **-upgrade** option:
+```
+$ terraform init -upgrade
+```
+
+
 ## Input variables
 
 Many aspects of the infrastructure created by terraform can be modified by assigning different values to the variables defined in the file **input-vars.tf**

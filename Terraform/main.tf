@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      version = "4.28.0"
+      version = "4.60.0"
     }
   }
 }
@@ -211,7 +211,7 @@ resource "aws_key_pair" "ssh-key" {
 }
 
 #AMI
-data "aws_ami" "rhel8" {
+data "aws_ami" "rhel" {
   most_recent = true
   owners = ["309956199498"]
 
@@ -235,7 +235,7 @@ data "aws_ami" "rhel8" {
 # When using a standard instance
 resource "aws_instance" "baremetal" {
   count = var.spot_instance ? 0 : 1
-  ami = data.aws_ami.rhel8.id
+  ami = data.aws_ami.rhel.id
   instance_type = var.instance_type
   subnet_id = aws_subnet.subnet_pub.id
   vpc_security_group_ids = [aws_security_group.sg-ssh-in.id,aws_security_group.sg-web-in.id,aws_security_group.sg-vnc-in.id,aws_security_group.sg-all-out.id,aws_security_group.sg-api-in.id]
@@ -260,7 +260,7 @@ resource "aws_instance" "baremetal" {
 # When using a spot instance
 resource "aws_spot_instance_request" "baremetal" {
   count = var.spot_instance ? 1 : 0
-  ami = data.aws_ami.rhel8.id
+  ami = data.aws_ami.rhel.id
   instance_type = var.instance_type
   subnet_id = aws_subnet.subnet_pub.id
   vpc_security_group_ids = [aws_security_group.sg-ssh-in.id,aws_security_group.sg-web-in.id,aws_security_group.sg-vnc-in.id,aws_security_group.sg-all-out.id,aws_security_group.sg-api-in.id]

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     libvirt = {
       source = "dmacvicar/libvirt"
-      version = "0.6.14"
+      version = "0.7.1"
     }
   }
 }
@@ -150,7 +150,7 @@ resource "libvirt_domain" "master_domains" {
     mode = "host-passthrough"
   }
 
-#Main NIC connected to the provisioning network
+#Main NIC connected to the routable network
   network_interface {
     network_id = libvirt_network.chucky.id
     mac        = "${var.master_chucky_mac_base}${count.index}"
