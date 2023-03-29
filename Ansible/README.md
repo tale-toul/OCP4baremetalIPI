@@ -351,7 +351,7 @@ The playbook **rev_proxy.yaml** can be used to install and set up the NGINX reve
 
 A specific variable is used in this playbook:
 
-* **ext_dns_zone**.- External DNS domain for the Openshift cluster.  This is the public domain used to access the cluster through the reverse proxy and must be resolvable by the clientes connecting to the cluster.  
+* **ext_dns_zone**.- External DNS domain for the Openshift cluster.  This is the public domain used to access the cluster through the reverse proxy and must be resolvable by the clients connecting to the cluster.
 
      No default value is defined for this variable.
 
@@ -362,6 +362,8 @@ Other variables are used in the playbook and the jinja2 template used to generat
 * **dns_zone**.- DNS base zone for the Openshift cluster
 
 The playbook creates two self signed x509 certificates, one for the API endpoint and one for the default ingress controller.  Both are valid for the external DNS domain. 
+
+This playbook does not set up any DNS resolution to access the API and APPS endpoints. A public DNS resolver, a [local DNS server based on dnsmasq](#configuring-dns-resolution-with-dnsmasq) or adding the entries to the locahost file could be used to resolve the console and oauth internal DNS names.
 
 Run the playbook with a command like:
 ```

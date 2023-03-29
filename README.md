@@ -46,6 +46,7 @@
 * [External access to Openshift using NGINX](#external-access-to-openshift-using-nginx)
   * [Install and set up NGINX](#install-and-set-up-nginx)
   * [Install and set up NGINX with Ansible](#install-and-set-up-nginx-with-ansible)
+  * [Configuring DNS resolution with dnsmasq](#configuring-dns-resolution-with-dnsmasq) 
   * [Accessing the cluster](#accessing-the-cluster)
 * [Enable Internal Image Registry](#enable-internal-image-registry)
   * [Add Storage to the Worker Nodes](#add-storage-to-the-worker-nodes)
@@ -554,7 +555,7 @@ $ virsh -c qemu:///system pool-list --all --details
 
 The following network configuration allows the bootstrap VM, created as a nested virtual machine inside the provisioning host, to be reachable from outside the provisioning host.  
 
-The bootstrap VM is connected to the routeable and provision bridges (chucky and provision) directly which allows it to get IPs in the external networks and therefore be accessible from outside the provisioning VM
+The bootstrap VM is connected to the routable and provision bridges (chucky and provision) directly which allows it to get IPs in the external networks and therefore be accessible from outside the provisioning VM
 
 Do this from a local terminal or the connection will be dropped half way through the configuration process.
 
@@ -1497,9 +1498,9 @@ The instructions to destroy the cluster and the accompanying infrastructure are 
 
 ## External access to Openshift using NGINX
 
-The Openshift cluster resulting from applying the instructions in this document is only accessible from the metal EC2 and the provisioning VM hosts.  The reason is, despite being a public cluster, the IPs for the API endpoint and ingress controller are assigned from the routeable virtual network which is not accessible from outside the metal EC2 host.
+The Openshift cluster resulting from applying the instructions in this document is only accessible from the metal EC2 and the provisioning VM hosts.  The reason is, despite being a public cluster, the IPs for the API endpoint and ingress controller are assigned from the routable virtual network which is not accessible from outside the metal EC2 host.
 
-One solution to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.  In this project a reverse proxy based on NGINX is used.
+The solution used here to access the cluster from outside the physical host is to deploy a reverse proxy in the physical host and use it to rely requests to the Openshift cluster.  A reverse proxy based on NGINX is used.
 
 The reverse proxy contains different configuration sections for accessing the API endpoint, secure application routes on port 443 and insecure application routes on port 80.
 
@@ -1516,7 +1517,7 @@ The one caveat about DNS zones translation is that the web console (https://cons
 
 The console and oauth URLs can be changed from their default values, but can only be accessed using the configured URL, and the new DNS names must be resolvable from inside the cluster: [Customizing the console route](https://docs.openshift.com/container-platform/4.9/web_console/customizing-the-web-console.html#customizing-the-console-route_customizing-web-console) and [Customizing the OAuth server URL](https://docs.openshift.com/container-platform/4.9/authentication/configuring-internal-oauth.html#customizing-the-oauth-server-url_configuring-internal-oauth)  
 
-A local DNS server based on dnsmasq or adding the names to the locahost file could be used to resolve the console and oauth internal DNS names.
+DNS entries for the API and APPS endpoints, resolving to the public IP of the physical host need to be created.  A public DNS resolver, a [local DNS server based on dnsmasq](#configuring-dns-resolution-with-dnsmasq) or adding the entries to the locahost file could be used to resolve the console and oauth internal DNS names.
 
 The reverse proxy also supports the websocket protocol used in the web console to show some of the cluster information like the container logs.
 
@@ -1678,6 +1679,40 @@ $ sudo systemctl reload nginx
 ### Install and set up NGINX with Ansible
 
 The installation and configuration of NGINX can be done using an ansible playbook, check the instructions in section [Install and set up NGINX with Ansible](Ansible/README.md#install-and-set-up-nginx-with-ansible)
+
+### Configuring DNS resolution with dnsmasq
+Here is how to set up dnsmasq in the client host to resolve the DNS queries for the API and application routes in the Openshift cluster.  
+
+In this example dnsmasq is running as a NetworkManager plugging as is the case in Fedora and RHEL servers, if it was running as a standalone service the files are in /etc/dnsmasq.conf and /etc/dnsmasq.d/
+
+To define dnsmasq as the default DNS server add a file to __/etc/NetworkManager/conf.d/__, any filename ending in .conf is good, with the contents:
+```
+[main]
+dns=dnsmasq
+```
+Create a file in __/etc/NetworkManager/dnsmasq.d/__, again any filename ending in .conf is good.  This file contains the resolution records for the domain in question, the following example file contains two records:
+* A type A record that resolves a single hostname into the IP address of the Application Gateway
+* A wildcard type A record that resolves a whole DNS domain into the IP address of the Application Gateway
+```
+host-record=api.jupiter.example.com,20.97.425.13
+address=/.apps.jupiter.example.com/20.97.425.13
+```
+Now restart the NetworkManager service with:
+```
+$ sudo systemctl restart NetworkManager
+```
+The file /etc/resolv.conf should now contain a line pointing to 127.0.0.1 as the name server:
+```
+$ $ cat /etc/resolv.conf
+# Generated by NetworkManager
+...
+nameserver 127.0.0.1
+```
+The resolution should be working now:
+```
+$ dig +short api.jupiter.example.com
+20.97.425.13
+```
 
 ### Accessing the cluster
 Accessing the cluster is done in the same way as for any other cluster, except that the DNS domain used is the external dns zone defined in NGINX virtual servers:
